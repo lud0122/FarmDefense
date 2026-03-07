@@ -12,7 +12,7 @@ export class GameScene extends Phaser.Scene {
   private economySystem!: EconomySystem;
   private lives: number = GAME_CONFIG.MAX_LIVES;
   private livesText!: Phaser.GameObjects.Text;
-  private projectiles: Phaser.GameObjects.GameObject[] = [];
+  // projectiles are managed by individual towers
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
 
@@ -234,7 +234,7 @@ export class GameScene extends Phaser.Scene {
     this.updateProjectiles(time, delta);
   }
 
-  private updateProjectiles(time: number, delta: number): void {
+  private updateProjectiles(_time: number, _delta: number): void {
     // 遍历所有活跃的子弹（由 Tower.fire 返回的对象）
     // 由于 Projectile 是自包含的更新逻辑，这里不需要额外处理
     // 但我们需要清理已销毁的子弹

@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { Tower } from '../entities/Tower';
 import { PistolTower } from '../entities/towers/PistolTower';
 import { MachineGunTower } from '../entities/towers/MachineGunTower';
-import { TOWERS, TowerConfig } from '../config/towers';
+import { TOWERS } from '../config/towers';
 
 export class TowerManager {
   private towers: Tower[] = [];
@@ -49,7 +49,7 @@ export class TowerManager {
     this.updateProjectiles(delta);
   }
 
-  private updateProjectiles(delta: number): void {
+  private updateProjectiles(_delta: number): void {
     // 这里会在 Projectile 类中实现
     // 暂时不做处理，由各个 Projectile 自己更新
   }

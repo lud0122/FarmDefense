@@ -1,12 +1,11 @@
 import Phaser from 'phaser';
 import { Enemy } from './Enemy';
 
-export class Projectile extends Phaser.GameObjects.Circle {
+export class Projectile extends Phaser.GameObjects.Arc {
   private target: Enemy | null;
   private speed: number;
   private damage: number;
   private isActive: boolean = true;
-  private trail: Phaser.GameObjects.Graphics[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -17,7 +16,7 @@ export class Projectile extends Phaser.GameObjects.Circle {
     damage: number,
     color: number = 0xFFFF00
   ) {
-    super(scene, x, y, 4, color);
+    super(scene, x, y, 4, 0, 360, false, color);
 
     this.target = target;
     this.speed = speed;
@@ -25,16 +24,9 @@ export class Projectile extends Phaser.GameObjects.Circle {
     this.isActive = true;
 
     scene.add.existing(this);
-
-    // 添加拖尾效果
-    this.createTrail();
   }
 
-  private createTrail(): void {
-    // 每帧创建一个小圆作为拖尾
-  }
-
-  public update(time: number, delta: number): void {
+  public update(_time: number, delta: number): void {
     if (!this.isActive || !this.target) {
       this.destroy();
       return;

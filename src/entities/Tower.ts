@@ -25,7 +25,7 @@ export class Tower extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
-  public update(time: number, delta: number, enemies: Enemy[]): Phaser.GameObjects.GameObject | null {
+  public update(time: number, _delta: number, enemies: Enemy[]): Phaser.GameObjects.GameObject | null {
     if (time < this.lastFireTime + this.config.fireRate) return null;
 
     const target = this.findTarget(enemies);
@@ -58,7 +58,7 @@ export class Tower extends Phaser.GameObjects.Container {
     return closest;
   }
 
-  protected fire(target: Enemy): Phaser.GameObjects.GameObject {
+  protected fire(_target: Enemy): Phaser.GameObjects.GameObject {
     // 子类实现，基类返回一个临时子弹
     const bullet = this.scene.add.circle(this.x, this.y, 4, 0xFFFF00);
     return bullet;

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyConfig } from '../config/enemies';
 
-export class Enemy extends Phaser.GameObjects.Rectangle {
+export class Enemy extends Phaser.GameObjects.Container {
   public health: number;
   public maxHealth: number;
   public config: EnemyConfig;
@@ -10,6 +10,9 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
   private path: Array<{ x: number; y: number }>;
   private isDead: boolean = false;
   public onDeath: () => void;
+  private sprite: Phaser.GameObjects.Rectangle;
+  private healthBar: Phaser.GameObjects.Rectangle;
+  private healthBarBg: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -19,7 +22,7 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
     path: Array<{ x: number; y: number }>,
     onDeath: () => void
   ) {
-    super(scene, x, y, config.size, config.size, config.color);
+    super(scene, x, y);
 
     this.config = config;
     this.maxHealth = config.health;
@@ -29,20 +32,21 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
     this.onDeath = onDeath;
     this.isDead = false;
 
-    this.setCollideWorldBounds(true);
+    // 敌人主体（使用矩形作为占位）
+    this.sprite = scene.add.rectangle(0, 0, config.size, config.size, config.color);
+    this.add(this.sprite);
+
+    // 血条背景
+    this.healthBarBg = scene.add.rectangle(0, -config.size / 2 - 8, config.size, 4, 0x000000);
+    this.add(this.healthBarBg);
+
+    // 血条
+    this.healthBar = scene.add.rectangle(0, -config.size / 2 - 8, config.size, 4, 0x00ff00);
+    this.healthBar.setOrigin(0.5, 0.5);
+    this.add(this.healthBar);
+
     scene.add.existing(this);
-
-    // 添加血条背景
-    const barBg = scene.add.rectangle(x, y - 15, config.size, 4, 0x000000);
-    this.add(barBg);
-
-    // 添加血条
-    const bar = scene.add.rectangle(x - config.size / 2 + 2, y - 15, config.size - 4, 2, 0x00ff00);
-    this.healthBar = bar;
-    this.add(bar);
   }
-
-  private healthBar: Phaser.GameObjects.Rectangle;
 
   public takeDamage(amount: number): void {
     if (this.isDead) return;
@@ -51,7 +55,16 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
 
     // 更新血条
     const healthPercent = Math.max(0, this.health / this.maxHealth);
-    this.healthBar.width = (this.config.size - 4) * healthPercent;
+    const barWidth = this.config.size * healthPercent;
+    this.healthBar.setDisplaySize(barWidth, 4);
+
+    // 受伤闪烁效果
+    this.sprite.setFillStyle(0xffffff);
+    this.scene.time.delayedCall(100, () => {
+      if (this.sprite && !this.isDead) {
+        this.sprite.setFillStyle(this.config.color);
+      }
+    });
 
     if (this.health <= 0 && !this.isDead) {
       this.die();
@@ -60,11 +73,22 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
 
   private die(): void {
     this.isDead = true;
-    this.onDeath();
-    this.destroy();
+
+    // 死亡动画效果
+    this.scene.tweens.add({
+      targets: this,
+      scale: 0.5,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2',
+      onComplete: () => {
+        this.onDeath();
+        this.destroy();
+      }
+    });
   }
 
-  public update(time: number, delta: number): void {
+  public update(_time: number, delta: number): void {
     if (this.isDead || this.pathIndex >= this.path.length - 1) return;
 
     const target = this.path[this.pathIndex + 1];
@@ -79,18 +103,14 @@ export class Enemy extends Phaser.GameObjects.Rectangle {
       const moveY = (dy / distance) * this.config.speed * (delta / 1000);
       this.x += moveX;
       this.y += moveY;
-
-      // 更新血条位置
-      const children = this.list;
-      for (const child of children) {
-        if (child instanceof Phaser.GameObjects.Rectangle && child !== this.healthBar) {
-          // 血条背景跟随
-        }
-      }
     }
   }
 
   public reachedEnd(): boolean {
     return this.pathIndex >= this.path.length - 1 && !this.isDead;
+  }
+
+  public getPosition(): { x: number; y: number } {
+    return { x: this.x, y: this.y };
   }
 }
