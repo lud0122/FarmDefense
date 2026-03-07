@@ -7,7 +7,6 @@ import { TOWERS } from '../config/towers';
 export class TowerManager {
   private towers: Tower[] = [];
   private scene: Phaser.Scene;
-  private projectiles: Phaser.GameObjects.GameObject[] = [];
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -34,24 +33,20 @@ export class TowerManager {
     return tower;
   }
 
-  public update(time: number, delta: number, enemies: any[]): void {
+  public update(time: number, delta: number, enemies: any[]): any[] {
+    const newProjectiles: any[] = [];
+
     // 更新所有塔楼
     for (const tower of this.towers) {
       if (tower.active) {
         const projectile = tower.update(time, delta, enemies);
         if (projectile) {
-          this.projectiles.push(projectile);
+          newProjectiles.push(projectile);
         }
       }
     }
 
-    // 更新所有子弹
-    this.updateProjectiles(delta);
-  }
-
-  private updateProjectiles(_delta: number): void {
-    // 这里会在 Projectile 类中实现
-    // 暂时不做处理，由各个 Projectile 自己更新
+    return newProjectiles;
   }
 
   public getTowers(): Tower[] {

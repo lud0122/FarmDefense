@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyManager } from '../systems/EnemyManager';
 import { TowerManager } from '../systems/TowerManager';
+import { ProjectileManager } from '../systems/ProjectileManager';
 import { EconomySystem } from '../systems/EconomySystem';
 import { PATH_POINTS, GAME_CONFIG } from '../config/constants';
 import { ENEMIES } from '../config/enemies';
@@ -9,10 +10,10 @@ import { TOWERS } from '../config/towers';
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
   private towerManager!: TowerManager;
+  private projectileManager!: ProjectileManager;
   private economySystem!: EconomySystem;
   private lives: number = GAME_CONFIG.MAX_LIVES;
   private livesText!: Phaser.GameObjects.Text;
-  // projectiles are managed by individual towers
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
 
@@ -43,6 +44,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.towerManager = new TowerManager(this);
+    this.projectileManager = new ProjectileManager(this);
 
     // 创建 UI
     this.createUI();
@@ -227,19 +229,13 @@ export class GameScene extends Phaser.Scene {
     // 更新敌人
     this.enemyManager.update(time, delta);
 
-    // 更新塔楼
-    this.towerManager.update(time, delta, this.enemyManager.getEnemies());
+    // 更新塔楼并发射子弹
+    const newProjectiles = this.towerManager.update(time, delta, this.enemyManager.getEnemies());
+    for (const projectile of newProjectiles) {
+      this.projectileManager.addProjectile(projectile);
+    }
 
     // 更新子弹
-    this.updateProjectiles(time, delta);
-  }
-
-  private updateProjectiles(_time: number, _delta: number): void {
-    // 遍历所有活跃的子弹（由 Tower.fire 返回的对象）
-    // 由于 Projectile 是自包含的更新逻辑，这里不需要额外处理
-    // 但我们需要清理已销毁的子弹
-
-    // 实际上，Projectile 应该作为数组在 TowerManager 中管理
-    // 简化起见，我们让子弹自己管理更新
+    this.projectileManager.update(time, delta);
   }
 }
