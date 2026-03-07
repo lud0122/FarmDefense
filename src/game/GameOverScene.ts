@@ -68,13 +68,15 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private setupButton(btn: Phaser.GameObjects.Rectangle): void {
+    const originalColor = btn.fillColor;
     btn.on('pointerover', () => {
-      btn.setFillStyle(btn.fillStyle === 0x4CAF50 ? 0x45a049 : 0x1976D2);
+      const hoverColor = originalColor === 0x4CAF50 ? 0x45a049 : 0x1976D2;
+      btn.setFillStyle(hoverColor);
       this.input.setDefaultCursor('pointer');
     });
 
     btn.on('pointerout', () => {
-      btn.setFillStyle(btn.fillStyle === 0x45a049 ? 0x4CAF50 : 0x2196F3);
+      btn.setFillStyle(originalColor);
       this.input.setDefaultCursor('default');
     });
   }

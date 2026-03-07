@@ -215,15 +215,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   private gameOver(): void {
-    this.add.text(400, 300, '游戏结束', {
-      fontSize: '64px',
-      color: '#FF0000',
-      stroke: '#000000',
-      strokeThickness: 4
-    }).setOrigin(0.5);
-
-    this.scene.pause();
+    // 切换到游戏结束场景
+    this.cameras.main.fadeOut(500);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.launch('GameOverScene', { victory: false });
+    });
   }
+
+  // 胜利处理方法 - 将在后续版本中实现
+  // private handleVictory(): void {
+  //   this.cameras.main.fadeOut(500);
+  //   this.cameras.main.once('camerafadeoutcomplete', () => {
+  //     this.scene.launch('GameOverScene', { victory: true });
+  //   });
+  // }
 
   update(time: number, delta: number): void {
     // 更新敌人
