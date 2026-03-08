@@ -8,6 +8,7 @@ import { ENEMIES } from '../config/enemies';
 import { TOWERS } from '../config/towers';
 
 import { AudioSystem } from '../systems/AudioSystem';
+import { PlayerHelicopter } from '../entities/PlayerHelicopter';
 
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
@@ -15,6 +16,7 @@ export class GameScene extends Phaser.Scene {
   private projectileManager!: ProjectileManager;
   private economySystem!: EconomySystem;
   private audioSystem!: AudioSystem;
+  private playerHelicopter!: PlayerHelicopter;
   private lives: number = GAME_CONFIG.MAX_LIVES;
   private livesText!: Phaser.GameObjects.Text;
   private waveInProgress: boolean = false;
@@ -57,6 +59,9 @@ export class GameScene extends Phaser.Scene {
 
     this.towerManager = new TowerManager(this);
     this.projectileManager = new ProjectileManager(this);
+
+    // 创建玩家直升机
+    this.playerHelicopter = new PlayerHelicopter(this, 400, 300);
 
     // Disable context menu on game canvas
     this.input.mouse?.disableContextMenu();
@@ -480,6 +485,12 @@ export class GameScene extends Phaser.Scene {
     const newProjectiles = this.towerManager.update(time, delta, this.enemyManager.getEnemies());
     for (const projectile of newProjectiles) {
       this.projectileManager.addProjectile(projectile);
+    }
+
+    // 更新玩家直升机并发射子弹
+    const helicopterProjectile = this.playerHelicopter.update(time, delta, this.enemyManager.getEnemies());
+    if (helicopterProjectile) {
+      this.projectileManager.addProjectile(helicopterProjectile);
     }
 
     // 更新子弹
