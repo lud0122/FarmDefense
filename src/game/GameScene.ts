@@ -58,6 +58,9 @@ export class GameScene extends Phaser.Scene {
     this.towerManager = new TowerManager(this);
     this.projectileManager = new ProjectileManager(this);
 
+    // Disable context menu on game canvas
+    this.input.mouse?.disableContextMenu();
+
     // 创建 UI
     this.createUI();
 
@@ -72,21 +75,141 @@ export class GameScene extends Phaser.Scene {
       this.handleClick(pointer);
     });
 
+    // 右键点击空白处隐藏回收菜单
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.button === 2) {
+        // Check if clicked on empty space (not on a tower)
+        const clickedTower = this.towerManager.getTowers().some(
+          tower => Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, tower.x, tower.y) < 30
+        );
+        if (!clickedTower) {
+          this.hideTowerRecycleMenu();
+        }
+      }
+    });
+
     // 启动背景音乐
     this.audioSystem.startBGM();
   }
 
   private createBackground(): void {
-    // 草地背景
-    const ground = this.add.rectangle(400, 300, 800, 600, 0x228B22);
-    ground.setDepth(-1);
+    // 整体农场背景
+    this.add.rectangle(400, 300, 800, 600, 0x7CB342).setDepth(-10);
 
-    // 添加一些装饰性的草地纹理
-    for (let i = 0; i < 50; i++) {
-      const x = Phaser.Math.Between(0, 800);
-      const y = Phaser.Math.Between(0, 600);
-      const size = Phaser.Math.Between(2, 5);
-      this.add.circle(x, y, size, 0x2E8B57).setDepth(-1);
+    // 创建不同的作物区域
+    this.createCropZones();
+
+    // 添加农田边缘（栅栏）
+    this.createFarmFences();
+
+    // 添加装饰元素（稻草人、水桶等）
+    this.createFarmDecorations();
+  }
+
+  private createCropZones(): void {
+    // 每个作物区域用一个emoji文本和背景表示
+    const cropZones = [
+      { x: 100, y: 100, width: 150, height: 120, type: '🌽', name: '玉米地', color: 0xFFF8E1 },
+      { x: 700, y: 100, width: 150, height: 120, type: '🌾', name: '麦田', color: 0xFFE082 },
+      { x: 100, y: 500, width: 150, height: 80, type: '🥕', name: '菜园', color: 0xFFCC80 },
+      { x: 700, y: 500, width: 150, height: 80, type: '🍎', name: '果园', color: 0xFFAB91 }
+    ];
+
+    for (const zone of cropZones) {
+      // 区域背景
+      const bg = this.add.rectangle(zone.x, zone.y, zone.width, zone.height, zone.color);
+      bg.setDepth(-5);
+      bg.setAlpha(0.6);
+
+      // 作物emoji
+      const rows = Math.floor(zone.height / 30);
+      const cols = Math.floor(zone.width / 30);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          this.add.text(
+            zone.x - zone.width / 2 + 15 + c * 30,
+            zone.y - zone.height / 2 + 15 + r * 30,
+            zone.type,
+            { fontSize: '20px' }
+          ).setOrigin(0.5).setDepth(-4);
+        }
+      }
+
+      // 区域标签
+      this.add.text(zone.x, zone.y + zone.height / 2 + 10, zone.name, {
+        fontSize: '12px',
+        color: '#5D4037',
+        backgroundColor: '#FFFFFF',
+        padding: { x: 4, y: 2 }
+      }).setOrigin(0.5).setDepth(-3);
+    }
+  }
+
+  private createFarmFences(): void {
+    // 创建简单的木栅栏效果
+    const fenceEmoji = '🚧';
+
+    // 顶部边缘
+    for (let x = 40; x < 760; x += 80) {
+      if (x < 100 || x > 650) { // 留出路径入口
+        this.add.text(x, 30, fenceEmoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+      }
+    }
+
+    // 底部边缘
+    for (let x = 40; x < 760; x += 80) {
+      if (x < 200 || x > 600) { // 留出路径出口
+        this.add.text(x, 480, fenceEmoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+      }
+    }
+
+    // 左侧边缘
+    for (let y = 60; y < 500; y += 60) {
+      if (y < 100 || y > 400) {
+        this.add.text(30, y, fenceEmoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+      }
+    }
+
+    // 右侧边缘
+    for (let y = 60; y < 500; y += 60) {
+      if (y < 100 || y > 400) {
+        this.add.text(770, y, fenceEmoji, { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+      }
+    }
+  }
+
+  private createFarmDecorations(): void {
+    // 谷仓
+    this.add.text(80, 45, '🏠', { fontSize: '60px' }).setOrigin(0.5).setDepth(-2);
+
+    // 风车
+    this.add.text(720, 45, '💨', { fontSize: '50px' }).setOrigin(0.5).setDepth(-2);
+
+    // 稻草人
+    this.add.text(300, 100, '🧙‍♂️', { fontSize: '40px' }).setOrigin(0.5).setDepth(-2);
+
+    // 水桶
+    this.add.text(500, 100, '🪣', { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+
+    // 水桶
+    this.add.text(200, 450, '🪣', { fontSize: '30px' }).setOrigin(0.5).setDepth(-2);
+
+    // 树
+    this.add.text(650, 500, '🌲', { fontSize: '40px' }).setOrigin(0.5).setDepth(-2);
+
+    // 草地装饰
+    for (let i = 0; i < 20; i++) {
+      const x = Phaser.Math.Between(250, 550);
+      const y = Phaser.Math.Between(250, 400);
+      this.add.text(x, y, '🌿', { fontSize: '15px' }).setOrigin(0.5).setDepth(-6);
+    }
+
+    // 花
+    for (let i = 0; i < 15; i++) {
+      const x = Phaser.Math.Between(200, 600);
+      const y = Phaser.Math.Between(150, 350);
+      const flowers = ['🌻', '🌷', '🌹'];
+      this.add.text(x, y, flowers[Math.floor(Math.random() * flowers.length)], { fontSize: '18px' }).setOrigin(0.5).setDepth(-5);
     }
   }
 
@@ -162,7 +285,111 @@ export class GameScene extends Phaser.Scene {
 
   private selectTower(towerKey: string): void {
     this.selectedTowerKey = towerKey;
+    this.audioSystem.playClickSound();
     console.log('Selected tower:', towerKey);
+
+    // Deselect all towers when selecting a new one
+    for (const tower of this.towerManager.getTowers()) {
+      tower.showSelected(false);
+    }
+
+  }
+
+  public showTowerRecycleMenu(tower: any): void {
+    // Hide previous menu if exists
+    this.hideTowerRecycleMenu();
+
+    // Mark this tower as selected
+    (this as any).selectedTower = tower;
+    tower.showSelected(true);
+
+    const recycleValue = tower.getRecycleValue();
+
+    // Create menu background
+    const menuX = tower.x;
+    const menuY = tower.y - 50;
+    const menuBg = this.add.rectangle(menuX, menuY, 120, 60, 0x333333);
+    menuBg.setStrokeStyle(2, 0xFFD700);
+    menuBg.setDepth(100);
+
+    // Recycle text
+    const recycleText = this.add.text(menuX, menuY - 15, '♻️ 回收塔楼', {
+      fontSize: '14px',
+      color: '#FFFFFF'
+    }).setOrigin(0.5).setDepth(101);
+
+    // Value text
+    const valueText = this.add.text(menuX, menuY + 10, `$${recycleValue} (${Math.floor(tower.originalCost * 0.5)})`, {
+      fontSize: '16px',
+      color: '#FFD700'
+    }).setOrigin(0.5).setDepth(101);
+
+    // Store menu elements
+    (this as any).recycleMenu = [menuBg, recycleText, valueText];
+
+    // Track this tower in scene
+    (this as any).selectedTower = tower;
+
+    // Make menu clickable
+    menuBg.setInteractive();
+    menuBg.on('pointerdown', () => {
+      this.recycleTower(tower, recycleValue);
+    });
+
+    // Make menu disappear after 3 seconds
+    this.time.delayedCall(3000, () => {
+      this.hideTowerRecycleMenu();
+    });
+  }
+
+  private hideTowerRecycleMenu(): void {
+    const menu = (this as any).recycleMenu;
+    if (menu) {
+      for (const element of menu) {
+        if (element.active) {
+          element.destroy();
+        }
+      }
+      (this as any).recycleMenu = null;
+    }
+
+    // Deselect tower
+    const tower = (this as any).selectedTower;
+    if (tower && tower.active) {
+      tower.showSelected(false);
+    }
+    (this as any).selectedTower = null;
+  }
+
+  private recycleTower(tower: any, value: number): void {
+    // Hide menu
+    this.hideTowerRecycleMenu();
+
+    // Add money
+    this.economySystem.addMoney(value);
+
+    // Play coin sound
+    this.audioSystem.playCoinSound();
+
+    // Remove tower
+    this.towerManager.removeTower(tower);
+
+    // Show recycle effect
+    const recycleText = this.add.text(tower.x, tower.y - 20, `+$${value}`, {
+      fontSize: '20px',
+      color: '#FFD700',
+      stroke: '#000000',
+      strokeThickness: 3
+    }).setOrigin(0.5);
+
+    this.tweens.add({
+      targets: recycleText,
+      y: tower.y - 50,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => recycleText.destroy()
+    });
   }
 
   private handleClick(pointer: Phaser.Input.Pointer): void {
