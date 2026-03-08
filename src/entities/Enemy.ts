@@ -15,6 +15,8 @@ export class Enemy extends Phaser.GameObjects.Container {
   public maxHealth: number;
   public config: EnemyConfig;
   public reward: number;
+  public currentSpeed: number; // 当前实际速度（可被减速）
+  public slowEffects: number = 0; // 减速效果计数
   private pathIndex: number = 0;
   private path: Array<{ x: number; y: number }>;
   private isDead: boolean = false;
@@ -37,6 +39,8 @@ export class Enemy extends Phaser.GameObjects.Container {
     this.maxHealth = config.health;
     this.health = config.health;
     this.reward = config.reward;
+    this.currentSpeed = config.speed; // 初始速度
+    this.slowEffects = 0;
     this.path = path;
     this.onDeath = onDeath;
     this.isDead = false;
@@ -121,8 +125,8 @@ export class Enemy extends Phaser.GameObjects.Container {
     if (distance < 5) {
       this.pathIndex++;
     } else {
-      const moveX = (dx / distance) * this.config.speed * (delta / 1000);
-      const moveY = (dy / distance) * this.config.speed * (delta / 1000);
+      const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+      const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
       this.x += moveX;
       this.y += moveY;
     }

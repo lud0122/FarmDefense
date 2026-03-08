@@ -70,9 +70,18 @@ export class IceProjectile extends Phaser.GameObjects.Arc {
   }
 
   private applyFreezeEffect(enemy: Enemy): void {
-    // Apply slow effect
-    const originalSpeed = enemy.config.speed;
-    enemy.config.speed = originalSpeed * 0.5;
+    // Increment slow effect counter
+    enemy.slowEffects++;
+
+    // Only apply slow if this is the first freeze effect
+    if (enemy.slowEffects === 1) {
+      // Store original speed if not already stored
+      if (!enemy.currentSpeed) {
+        enemy.currentSpeed = enemy.config.speed;
+      }
+      // Apply 50% slow
+      enemy.currentSpeed = enemy.config.speed * 0.5;
+    }
 
     // Freeze visual feedback
     const frost = this.scene.add.rectangle(
@@ -96,11 +105,17 @@ export class IceProjectile extends Phaser.GameObjects.Arc {
       loop: true
     });
 
-    // Restore speed after freeze duration
+    // Schedule removal of this freeze effect
     this.scene.time.delayedCall(this.freezeDuration, () => {
-      if (enemy.active) {
-        enemy.config.speed = originalSpeed;
+      // Decrement slow effect counter
+      enemy.slowEffects = Math.max(0, enemy.slowEffects - 1);
+
+      // Only restore speed if no other freeze effects are active
+      if (enemy.active && enemy.slowEffects === 0) {
+        enemy.currentSpeed = enemy.config.speed;
       }
+
+      // Always destroy visual feedback
       frost.destroy();
       followEvent.remove();
     });
