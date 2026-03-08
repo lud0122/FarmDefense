@@ -11,10 +11,14 @@ export class ProjectileManager {
 
   public update(time: number, delta: number): void {
     // 更新所有活跃的子弹
-    this.projectiles = this.projectiles.filter(p => p.active);
+    // 支持 GameObject 和自定义 projectile wrapper
+    this.projectiles = this.projectiles.filter(p => {
+      const isActive = p.active || (p.isSpriteActive && p.isSpriteActive());
+      return isActive;
+    });
 
     for (const projectile of this.projectiles) {
-      if (projectile.active) {
+      if (projectile.update) {
         projectile.update(time, delta);
       }
     }

@@ -2,6 +2,10 @@ import Phaser from 'phaser';
 import { Tower } from '../entities/Tower';
 import { PistolTower } from '../entities/towers/PistolTower';
 import { MachineGunTower } from '../entities/towers/MachineGunTower';
+import { GrenadeTower } from '../entities/towers/GrenadeTower';
+import { IceTower } from '../entities/towers/IceTower';
+import { ElectricTower } from '../entities/towers/ElectricTower';
+import { SentinelTower } from '../entities/towers/SentinelTower';
 import { TOWERS } from '../config/towers';
 
 export class TowerManager {
@@ -24,6 +28,18 @@ export class TowerManager {
         break;
       case 'machinegun':
         tower = new MachineGunTower(this.scene, x, y, config);
+        break;
+      case 'grenade':
+        tower = new GrenadeTower(this.scene, x, y, config);
+        break;
+      case 'ice':
+        tower = new IceTower(this.scene, x, y, config);
+        break;
+      case 'electric':
+        tower = new ElectricTower(this.scene, x, y, config);
+        break;
+      case 'sentinel':
+        tower = new SentinelTower(this.scene, x, y, config);
         break;
       default:
         tower = new PistolTower(this.scene, x, y, config);
