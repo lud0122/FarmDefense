@@ -6,6 +6,7 @@ import { EconomySystem } from '../systems/EconomySystem';
 import { PATH_POINTS, GAME_CONFIG } from '../config/constants';
 import { ENEMIES } from '../config/enemies';
 import { TOWERS } from '../config/towers';
+import { LEVELS } from '../config/levels';
 
 import { AudioSystem } from '../systems/AudioSystem';
 import { PlayerHelicopter } from '../entities/PlayerHelicopter';
@@ -416,32 +417,80 @@ export class GameScene extends Phaser.Scene {
     this.towerManager.placeTower(500, 350, 'machinegun');
   }
 
+  private currentLevel: number = 0;
+
   private startNextWave(): void {
     if (this.waveInProgress) return;
+
+    const level = LEVELS[this.currentLevel];
+    if (!level) {
+      // 所有关卡完成
+      console.log('All levels complete!');
+      return;
+    }
+
+    if (this.currentWave >= level.waves.length) {
+      // 当前关卡完成，进入下一关
+      this.currentLevel++;
+      this.currentWave = 0;
+      console.log(`Level ${this.currentLevel} complete!`);
+      this.startNextWave();
+      return;
+    }
 
     this.waveInProgress = true;
     this.currentWave++;
 
-    // 生成敌人波次
-    const waveConfig = [
-      { config: ENEMIES.rabbit, count: 5, interval: 1500 },
-      { config: ENEMIES.rabbit, count: 3, interval: 1000 },
-      { config: ENEMIES.boar, count: 2, interval: 2000 }
-    ];
+    // 获取当前波次配置
+    const waveConfig = level.waves[this.currentWave - 1];
 
-    this.enemyManager.spawnWave(waveConfig);
+    // 转换为EnemyManager需要的格式
+    const enemyConfigs = waveConfig.map(w => ({
+      config: ENEMIES[w.enemyKey],
+      count: w.count,
+      interval: w.interval
+    }));
 
-    // 波次完成后检查
-    this.time.delayedCall(30000, () => {
+    this.enemyManager.spawnWave(enemyConfigs);
+
+    // 播放波次开始音效
+    this.audioSystem.playSpawnSound();
+
+    // 波次完成后检查（动态计算检查时间）
+    const totalSpawnTime = waveConfig.reduce((max, w) => {
+      return Math.max(max, w.count * w.interval);
+    }, 0);
+
+    const checkDelay = Math.max(totalSpawnTime + 10000, 30000);
+
+    this.time.delayedCall(checkDelay, () => {
       this.waveInProgress = false;
       if (this.enemyManager.getEnemyCount() === 0) {
         console.log('Wave complete!');
-        // 可以添加波次间休整时间，然后自动开始下一波
-        this.time.delayedCall(5000, () => {
+        // 波次间休整时间
+        this.time.delayedCall(3000, () => {
           this.startNextWave();
         });
+      } else {
+        // 还有敌人存活，继续检查
+        this.checkWaveComplete();
       }
     });
+  }
+
+  private checkWaveComplete(): void {
+    if (this.enemyManager.getEnemyCount() === 0) {
+      this.waveInProgress = false;
+      console.log('Wave complete!');
+      this.time.delayedCall(3000, () => {
+        this.startNextWave();
+      });
+    } else {
+      // 继续检查
+      this.time.delayedCall(5000, () => {
+        this.checkWaveComplete();
+      });
+    }
   }
 
   private onEnemyReachEnd(): void {

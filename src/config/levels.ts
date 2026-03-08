@@ -16,46 +16,86 @@ export const LEVELS: LevelConfig[] = [
   {
     number: 1,
     name: '宁静农庄',
-    startingMoney: 300,
-    maxLives: 10,
+    startingMoney: 500,
+    maxLives: 20,
     waves: [
-      // 第1波：快速野兔群
-      [{ enemyKey: 'rabbit', count: 8, interval: 1200 }],
-      // 第2波：兔子大队
-      [{ enemyKey: 'rabbit', count: 15, interval: 1000 }],
+      // 第1波：兔子大军
+      [{ enemyKey: 'rabbit', count: 20, interval: 400 }],
+      // 第2波：更多兔子 + 野猪
+      [{ enemyKey: 'rabbit', count: 30, interval: 300 }, { enemyKey: 'boar', count: 5, interval: 1500 }],
       // 第3波：混合入侵
-      [{ enemyKey: 'rabbit', count: 12, interval: 900 }, { enemyKey: 'boar', count: 3, interval: 2500 }],
-      // 第4波：野猪突袭
-      [{ enemyKey: 'boar', count: 5, interval: 1800 }],
+      [{ enemyKey: 'rabbit', count: 25, interval: 250 }, { enemyKey: 'boar', count: 8, interval: 1200 }, { enemyKey: 'fox', count: 3, interval: 2000 }],
+      // 第4波：野猪大军
+      [{ enemyKey: 'boar', count: 15, interval: 800 }],
       // 第5波：终极混合
-      [{ enemyKey: 'rabbit', count: 15, interval: 800 }, { enemyKey: 'boar', count: 5, interval: 2000 }, { enemyKey: 'fox', count: 2, interval: 3000 }]
+      [{ enemyKey: 'rabbit', count: 40, interval: 200 }, { enemyKey: 'boar', count: 12, interval: 1000 }, { enemyKey: 'fox', count: 5, interval: 1500 }]
     ]
   },
   {
     number: 2,
     name: '野猪来袭',
-    startingMoney: 400,
-    maxLives: 10,
+    startingMoney: 800,
+    maxLives: 20,
     waves: [
-      [{ enemyKey: 'boar', count: 8, interval: 1500 }],
-      [{ enemyKey: 'rabbit', count: 20, interval: 600 }, { enemyKey: 'boar', count: 6, interval: 1500 }],
-      [{ enemyKey: 'fox', count: 4, interval: 2000 }],
-      [{ enemyKey: 'eagle', count: 3, interval: 2500 }],
-      [{ enemyKey: 'boar', count: 8, interval: 1200 }, { enemyKey: 'fox', count: 4, interval: 2000 }]
+      // 第1波：野猪群
+      [{ enemyKey: 'boar', count: 20, interval: 600 }],
+      // 第2波：兔子海 + 野猪
+      [{ enemyKey: 'rabbit', count: 50, interval: 200 }, { enemyKey: 'boar', count: 15, interval: 800 }],
+      // 第3波：狐狸 + 野猪
+      [{ enemyKey: 'fox', count: 15, interval: 1000 }, { enemyKey: 'boar', count: 20, interval: 700 }],
+      // 第4波：老鹰 + 混合
+      [{ enemyKey: 'eagle', count: 12, interval: 1200 }, { enemyKey: 'fox', count: 10, interval: 1500 }],
+      // 第5波：空虚混合大军
+      [{ enemyKey: 'rabbit', count: 40, interval: 300 }, { enemyKey: 'boar', count: 20, interval: 600 }, { enemyKey: 'fox', count: 15, interval: 1000 }]
     ]
   },
   {
     number: 3,
     name: '野兽之王',
-    startingMoney: 500,
-    maxLives: 10,
+    startingMoney: 1000,
+    maxLives: 25,
     waves: [
-      [{ enemyKey: 'boar', count: 10, interval: 1200 }],
-      [{ enemyKey: 'fox', count: 6, interval: 1500 }],
-      [{ enemyKey: 'eagle', count: 5, interval: 1800 }],
-      [{ enemyKey: 'bear', count: 2, interval: 4000 }],
-      // Boss战
-      [{ enemyKey: 'boar', count: 15, interval: 1000 }, { enemyKey: 'fox', count: 8, interval: 1800 }, { enemyKey: 'bear', count: 3, interval: 3500 }]
+      // 第1波：野猪大军
+      [{ enemyKey: 'boar', count: 30, interval: 500 }],
+      // 第2波：狐狸军团
+      [{ enemyKey: 'fox', count: 25, interval: 800 }],
+      // 第3波：老鹰空袭
+      [{ enemyKey: 'eagle', count: 20, interval: 1000 }],
+      // 第4波：熊 Boss
+      [{ enemyKey: 'bear', count: 5, interval: 2500 }],
+      // 第5波：Boss战 - 所有动物大军
+      [
+        { enemyKey: 'rabbit', count: 50, interval: 150 },
+        { enemyKey: 'boar', count: 30, interval: 400 },
+        { enemyKey: 'fox', count: 25, interval: 600 },
+        { enemyKey: 'eagle', count: 15, interval: 900 },
+        { enemyKey: 'bear', count: 8, interval: 2000 }
+      ]
+    ]
+  },
+  // 新增第4关：动物灾难
+  {
+    number: 4,
+    name: '动物灾难',
+    startingMoney: 1500,
+    maxLives: 30,
+    waves: [
+      // 第1波：无穷兔子
+      [{ enemyKey: 'rabbit', count: 80, interval: 100 }],
+      // 第2波：野猪冲锋
+      [{ enemyKey: 'boar', count: 50, interval: 300 }],
+      // 第3波：狐狸突袭
+      [{ enemyKey: 'fox', count: 40, interval: 400 }],
+      // 第4波：熊群
+      [{ enemyKey: 'bear', count: 15, interval: 1500 }],
+      // 第5波：末日混合 - 超大规模
+      [
+        { enemyKey: 'rabbit', count: 100, interval: 100 },
+        { enemyKey: 'boar', count: 50, interval: 250 },
+        { enemyKey: 'fox', count: 40, interval: 350 },
+        { enemyKey: 'eagle', count: 30, interval: 500 },
+        { enemyKey: 'bear', count: 12, interval: 1200 }
+      ]
     ]
   }
 ];

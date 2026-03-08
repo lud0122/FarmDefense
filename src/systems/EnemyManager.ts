@@ -39,12 +39,19 @@ export class EnemyManager {
 
   public spawnWave(enemies: Array<{ config: EnemyConfig; count: number; interval: number }>): void {
     let totalDelay = 0;
+    let maxDelay = 0;
 
     for (const wave of enemies) {
+      // 为每个敌人类型独立计算延迟，支持同时生成
+      const waveStartDelay = totalDelay;
+      let waveEndDelay = waveStartDelay;
+
       for (let i = 0; i < wave.count; i++) {
-        this.spawn(wave.config, totalDelay);
-        totalDelay += wave.interval;
+        this.spawn(wave.config, waveStartDelay + i * wave.interval);
+        waveEndDelay = waveStartDelay + i * wave.interval;
       }
+
+      maxDelay = Math.max(maxDelay, waveEndDelay);
     }
   }
 
