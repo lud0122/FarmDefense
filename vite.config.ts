@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: '/FarmDefense/',
   server: {
     port: 3000
   },
