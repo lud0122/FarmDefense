@@ -10,6 +10,12 @@ export class PistolTower extends Tower {
   }
 
   protected fire(target: Enemy): Phaser.GameObjects.GameObject {
+    // Play shoot sound
+    const gameScene = this.scene as any;
+    if (gameScene.audioSystem) {
+      gameScene.audioSystem.playShootSound();
+    }
+
     const projectile = new Projectile(
       this.scene,
       this.x,

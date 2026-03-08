@@ -7,11 +7,14 @@ import { PATH_POINTS, GAME_CONFIG } from '../config/constants';
 import { ENEMIES } from '../config/enemies';
 import { TOWERS } from '../config/towers';
 
+import { AudioSystem } from '../systems/AudioSystem';
+
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
   private towerManager!: TowerManager;
   private projectileManager!: ProjectileManager;
   private economySystem!: EconomySystem;
+  private audioSystem!: AudioSystem;
   private lives: number = GAME_CONFIG.MAX_LIVES;
   private livesText!: Phaser.GameObjects.Text;
   private waveInProgress: boolean = false;
@@ -22,6 +25,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    // 初始化音效系统
+    this.audioSystem = new AudioSystem(this);
+    this.audioSystem.create();
+
     // 绘制背景
     this.createBackground();
 
@@ -32,14 +39,19 @@ export class GameScene extends Phaser.Scene {
     this.economySystem = new EconomySystem(
       this,
       GAME_CONFIG.STARTING_MONEY,
-      (money) => console.log('Money changed:', money)
+      (_money) => {
+        // Money change callback
+      }
     );
     this.economySystem.createUI(20, 20);
 
     this.enemyManager = new EnemyManager(
       this,
       PATH_POINTS,
-      (reward) => this.economySystem.addMoney(reward),
+      (reward) => {
+        this.economySystem.addMoney(reward);
+        this.audioSystem.playCoinSound();
+      },
       () => this.onEnemyReachEnd()
     );
 
@@ -59,6 +71,9 @@ export class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       this.handleClick(pointer);
     });
+
+    // 启动背景音乐
+    this.audioSystem.startBGM();
   }
 
   private createBackground(): void {
