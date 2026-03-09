@@ -64,13 +64,14 @@ export class GameScene extends Phaser.Scene {
     // 创建玩家直升机
     this.playerHelicopter = new PlayerHelicopter(this, 400, 300);
 
+    // 创建 UI
+    this.createUI();
+
     // Disable context menu on game canvas
     this.input.mouse?.disableContextMenu();
 
-    // Keyboard shortcuts for tower selection (1-6)
+    // Keyboard shortcuts for tower selection (1-6) - 必须在UI创建后初始化
     this.setupKeyboardShortcuts();
-
-    // 创建 UI
     this.createUI();
 
     // 放置一些初始塔楼（测试用）
