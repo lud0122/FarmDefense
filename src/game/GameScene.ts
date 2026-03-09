@@ -72,7 +72,6 @@ export class GameScene extends Phaser.Scene {
 
     // Keyboard shortcuts for tower selection (1-6) - 必须在UI创建后初始化
     this.setupKeyboardShortcuts();
-    this.createUI();
 
     // 放置一些初始塔楼（测试用）
     this.placeInitialTowers();
