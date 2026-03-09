@@ -67,6 +67,9 @@ export class GameScene extends Phaser.Scene {
     // Disable context menu on game canvas
     this.input.mouse?.disableContextMenu();
 
+    // Keyboard shortcuts for tower selection (1-6)
+    this.setupKeyboardShortcuts();
+
     // 创建 UI
     this.createUI();
 
@@ -306,6 +309,36 @@ export class GameScene extends Phaser.Scene {
     for (const tower of this.towerManager.getTowers()) {
       tower.showSelected(false);
     }
+  }
+
+  private setupKeyboardShortcuts(): void {
+    const towerKeys = Object.keys(TOWERS);
+    const keyCodes = [
+      Phaser.Input.Keyboard.KeyCodes.ONE,
+      Phaser.Input.Keyboard.KeyCodes.TWO,
+      Phaser.Input.Keyboard.KeyCodes.THREE,
+      Phaser.Input.Keyboard.KeyCodes.FOUR,
+      Phaser.Input.Keyboard.KeyCodes.FIVE,
+      Phaser.Input.Keyboard.KeyCodes.SIX
+    ];
+
+    // Set up number keys 1-6 for tower selection
+    for (let i = 0; i < Math.min(towerKeys.length, keyCodes.length); i++) {
+      const key = this.input.keyboard!.addKey(keyCodes[i]);
+      key.on('down', () => {
+        this.selectTower(towerKeys[i]);
+      });
+    }
+
+    // ESC key to deselect
+    const escKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    escKey.on('down', () => {
+      if (this.selectedTowerKey) {
+        this.selectedTowerKey = null;
+        this.audioSystem.playClickSound();
+        console.log('Deselected tower (ESC)');
+      }
+    });
   }
 
   public showTowerRecycleMenu(tower: any): void {
