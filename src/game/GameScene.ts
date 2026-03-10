@@ -283,22 +283,51 @@ export class GameScene extends Phaser.Scene {
         color: '#FFD700'
       }).setOrigin(0.5);
 
+      // 快捷键提示
+      this.add.text(x, y + 28, `${index + 1}`, {
+        fontSize: '12px',
+        color: '#AAAAAA'
+      }).setOrigin(0.5);
+
       // 点击事件
       btn.on('pointerdown', () => {
-        this.selectTower(key);
+        this.selectTower(key, btn);
       });
+
+      // 保存按钮引用
+      (this as any).towerButtons = (this as any).towerButtons || new Map();
+      (this as any).towerButtons.set(key, btn);
     });
+
+    // 初始没有选中任何按钮
+    (this as any).currentSelectedBtn = null;
   }
 
   private selectedTowerKey: string | null = null;
 
-  private selectTower(towerKey: string): void {
+  private selectTower(towerKey: string, btn?: Phaser.GameObjects.Rectangle): void {
+    const towerButtons = (this as any).towerButtons;
+    const currentSelectedBtn = (this as any).currentSelectedBtn;
+
     // Toggle: if clicking the same tower, deselect it
     if (this.selectedTowerKey === towerKey) {
       this.selectedTowerKey = null;
       this.audioSystem.playClickSound();
       console.log('Deselected tower');
+
+      // 重置所有按钮颜色
+      if (towerButtons) {
+        towerButtons.forEach((b: Phaser.GameObjects.Rectangle) => {
+          b.setFillStyle(0x555555);
+        });
+      }
+      (this as any).currentSelectedBtn = null;
       return;
+    }
+
+    // 重置之前选中的按钮
+    if (currentSelectedBtn) {
+      currentSelectedBtn.setFillStyle(0x555555);
     }
 
     this.selectedTowerKey = towerKey;
@@ -308,6 +337,17 @@ export class GameScene extends Phaser.Scene {
     // Deselect all towers when selecting a new one
     for (const tower of this.towerManager.getTowers()) {
       tower.showSelected(false);
+    }
+
+    // 高亮当前选中的按钮
+    if (btn) {
+      btn.setFillStyle(0x00AA00); // 绿色表示选中
+      (this as any).currentSelectedBtn = btn;
+    } else if (towerButtons && towerButtons.has(towerKey)) {
+      // 如果是通过键盘触发的，找到对应的按钮
+      const targetBtn = towerButtons.get(towerKey);
+      targetBtn.setFillStyle(0x00AA00);
+      (this as any).currentSelectedBtn = targetBtn;
     }
   }
 

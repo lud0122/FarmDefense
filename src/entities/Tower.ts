@@ -68,10 +68,12 @@ export class Tower extends Phaser.GameObjects.Container {
       this.showRange(false);
     });
 
-    // 右键点击（回收）
+    // 点击事件（左键选择，右键回收）
     this.base.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.button === 2) { // 右键
         this.onRightClick();
+      } else if (pointer.button === 0) { // 左键
+        this.onLeftClick();
       }
     });
   }
@@ -81,6 +83,15 @@ export class Tower extends Phaser.GameObjects.Container {
     this.showSelected(true);
 
     // Call GameScene's showTowerRecycleMenu method directly
+    const gameScene = this.scene as any;
+    if (gameScene.showTowerRecycleMenu) {
+      gameScene.showTowerRecycleMenu(this);
+    }
+  }
+
+  private onLeftClick(): void {
+    // 左键点击已存在的塔楼时，应该选中它并显示回收菜单
+    // 这样玩家可以通过点击塔楼来查看回收价值
     const gameScene = this.scene as any;
     if (gameScene.showTowerRecycleMenu) {
       gameScene.showTowerRecycleMenu(this);
