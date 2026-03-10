@@ -480,34 +480,39 @@ export class GameScene extends Phaser.Scene {
 
   private handleClick(pointer: Phaser.Input.Pointer): void {
     if (this.selectedTowerKey) {
-      // Check if clicked on empty space (not on the tower selection panel at bottom)
+      // Check if clicked on the tower selection panel at bottom
       const clickedTowerPanel = pointer.y > 520;
+
+      if (clickedTowerPanel) {
+        return; // Clicked on panel, do nothing
+      }
+
+      // Check if clicked on an existing tower
       const clickedExistingTower = this.towerManager.getTowers().some(
         tower => Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, tower.x, tower.y) < 30
       );
 
-      // If clicked on empty space, deselect the tower
-      if (!clickedTowerPanel && !clickedExistingTower) {
-        // Deselect current tower selection
-        this.selectedTowerKey = null;
-        this.audioSystem.playClickSound();
-        console.log('Deselected tower (clicked on empty space)');
-        return;
+      if (clickedExistingTower) {
+        return; // Clicked on existing tower (handled by Tower class)
       }
 
-      // Place tower if clicked on valid empty space
-      if (!clickedTowerPanel) {
-        const tower = TOWERS[this.selectedTowerKey];
-        if (this.economySystem.canAfford(tower.cost)) {
-          if (this.economySystem.spendMoney(tower.cost)) {
-            this.towerManager.placeTower(pointer.x, pointer.y, this.selectedTowerKey);
-            // After placing, you can choose to keep selected or deselect
-            // this.selectedTowerKey = null; // Uncomment to deselect after placing
-          }
-        } else {
-          console.log('Not enough money!');
-          // Deselect if can't afford
-          this.selectedTowerKey = null;
+      // Place tower on empty space
+      const tower = TOWERS[this.selectedTowerKey];
+      if (this.economySystem.canAfford(tower.cost)) {
+        if (this.economySystem.spendMoney(tower.cost)) {
+          this.towerManager.placeTower(pointer.x, pointer.y, this.selectedTowerKey);
+          // After placing, you can choose to keep selected or deselect
+          // this.selectedTowerKey = null; // Uncomment to deselect after placing
+        }
+      } else {
+        console.log('Not enough money!');
+        // Deselect if can't afford
+        this.selectedTowerKey = null;
+        // Also reset button highlight
+        const currentSelectedBtn = (this as any).currentSelectedBtn;
+        if (currentSelectedBtn) {
+          currentSelectedBtn.setFillStyle(0x555555);
+          (this as any).currentSelectedBtn = null;
         }
       }
     }
