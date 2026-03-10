@@ -44,6 +44,7 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     this.setSize(48, 48);
 
     scene.add.existing(this);
+    this.setDepth(100); // 飞机在最上层
 
     // 显示射程范围（按R键切换）
     this.createRangeIndicator();
