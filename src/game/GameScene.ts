@@ -22,6 +22,7 @@ export class GameScene extends Phaser.Scene {
   private livesText!: Phaser.GameObjects.Text;
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
+  private previewRangeCircle: Phaser.GameObjects.Graphics | null = null;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -95,6 +96,11 @@ export class GameScene extends Phaser.Scene {
           this.hideTowerRecycleMenu();
         }
       }
+    });
+
+    // 鼠标移动监听 - 显示攻击范围预览
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      this.handlePointerMove(pointer);
     });
 
     // 启动背景音乐
@@ -315,6 +321,9 @@ export class GameScene extends Phaser.Scene {
       this.audioSystem.playClickSound();
       console.log('Deselected tower');
 
+      // 清除攻击范围预览
+      this.clearPreviewRange();
+
       // 重置所有按钮颜色
       if (towerButtons) {
         towerButtons.forEach((b: Phaser.GameObjects.Rectangle) => {
@@ -349,6 +358,12 @@ export class GameScene extends Phaser.Scene {
       targetBtn.setFillStyle(0x00AA00);
       (this as any).currentSelectedBtn = targetBtn;
     }
+
+    // 立即显示范围预览（如果鼠标已经在游戏区域）
+    const pointer = this.input.activePointer;
+    if (pointer.y <= 520) {
+      this.updatePreviewRange(pointer.x, pointer.y);
+    }
   }
 
   private setupKeyboardShortcuts(): void {
@@ -375,6 +390,8 @@ export class GameScene extends Phaser.Scene {
     escKey.on('down', () => {
       if (this.selectedTowerKey) {
         this.selectedTowerKey = null;
+        // 清除攻击范围预览
+        this.clearPreviewRange();
         this.audioSystem.playClickSound();
         console.log('Deselected tower (ESC)');
       }
@@ -478,6 +495,51 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private handlePointerMove(pointer: Phaser.Input.Pointer): void {
+    // 如果有选中的塔类型，显示攻击范围预览
+    if (this.selectedTowerKey) {
+      // 检查鼠标是否在游戏区域（不在塔选择面板区域）
+      const isInTowerPanel = pointer.y > 520;
+
+      if (!isInTowerPanel) {
+        this.updatePreviewRange(pointer.x, pointer.y);
+              } else {
+        this.clearPreviewRange();
+              }
+    } else {
+      this.clearPreviewRange();
+          }
+  }
+
+  private updatePreviewRange(x: number, y: number): void {
+    const towerConfig = TOWERS[this.selectedTowerKey!];
+    if (!towerConfig) return;
+
+    if (!this.previewRangeCircle) {
+      this.previewRangeCircle = this.add.graphics();
+    }
+
+    this.previewRangeCircle.clear();
+
+    // 绘制半透明填充
+    this.previewRangeCircle.fillStyle(0x00ff00, 0.1);
+    this.previewRangeCircle.fillCircle(x, y, towerConfig.range);
+
+    // 绘制边线
+    this.previewRangeCircle.lineStyle(2, 0x00ff00, 0.5);
+    this.previewRangeCircle.strokeCircle(x, y, towerConfig.range);
+
+    // 绘制中心点（表示塔的位置）
+    this.previewRangeCircle.fillStyle(0x00ff00, 0.8);
+    this.previewRangeCircle.fillCircle(x, y, 4);
+  }
+
+  private clearPreviewRange(): void {
+    if (this.previewRangeCircle) {
+      this.previewRangeCircle.clear();
+    }
+  }
+
   private handleClick(pointer: Phaser.Input.Pointer): void {
     if (this.selectedTowerKey) {
       // Check if clicked on the tower selection panel at bottom
@@ -501,6 +563,9 @@ export class GameScene extends Phaser.Scene {
       if (this.economySystem.canAfford(tower.cost)) {
         if (this.economySystem.spendMoney(tower.cost)) {
           this.towerManager.placeTower(pointer.x, pointer.y, this.selectedTowerKey);
+          // 放置成功后清除预览范围（如果保持选中状态）
+          // 如果希望放置后保持选中并继续显示预览，可以注释掉下面这行
+          // this.clearPreviewRange();
           // After placing, you can choose to keep selected or deselect
           // this.selectedTowerKey = null; // Uncomment to deselect after placing
         }
@@ -508,6 +573,8 @@ export class GameScene extends Phaser.Scene {
         console.log('Not enough money!');
         // Deselect if can't afford
         this.selectedTowerKey = null;
+        // 清除攻击范围预览
+        this.clearPreviewRange();
         // Also reset button highlight
         const currentSelectedBtn = (this as any).currentSelectedBtn;
         if (currentSelectedBtn) {
