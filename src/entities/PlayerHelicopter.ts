@@ -180,9 +180,11 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     // 查找范围内的敌人
     const target = this.findTarget(enemies);
     if (target) {
-      // 旋转直升机指向目标
+      // 旋转直升机指向目标（限制旋转角度避免翻转）
       const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
-      this.sprite.setRotation(angle);
+      // 限制旋转范围：只允许小幅旋转（-60°到+60°），保持飞机大致朝上
+      const limitedAngle = Phaser.Math.Clamp(angle, -Math.PI / 3, Math.PI / 3);
+      this.sprite.setRotation(limitedAngle);
 
       // 发射子弹
       this.lastFireTime = time;
