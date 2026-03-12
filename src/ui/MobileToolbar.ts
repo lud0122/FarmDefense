@@ -64,8 +64,9 @@ export class MobileToolbar extends Phaser.GameObjects.Container {
     container.add([bg, icon, label]);
     container.setDepth(1000);
 
-    // 触摸反馈
-    bg.on('pointerdown', () => {
+    // 触摸反馈 - 阻止事件冒泡到游戏场景
+    bg.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      pointer.event.stopPropagation();
       bg.clear();
       bg.fillStyle(0xFFFFFF, 0.3);
       bg.fillRoundedRect(-width / 2, -height / 2, width, height, 10);
@@ -73,7 +74,8 @@ export class MobileToolbar extends Phaser.GameObjects.Container {
       bg.fillRoundedRect(-width / 2 + 3, -height / 2 + 3, width - 6, height - 6, 8);
     });
 
-    bg.on('pointerup', () => {
+    bg.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      pointer.event.stopPropagation();
       this.resetButtonVisual(bg, width, height, config.color);
       config.onClick();
     });
