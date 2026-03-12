@@ -56,31 +56,100 @@ export class Tower extends Phaser.GameObjects.Container {
     scene.add.existing(this);
   }
 
+  private longPressTimer: Phaser.Time.TimerEvent | null = null;
+  private isLongPress: boolean = false;
+  private readonly LONG_PRESS_DURATION: number = 500; // 长按 500ms
+
   private setupInteraction(): void {
     if (!this.base) return;
 
-    // 鼠标悬停效果
+    // 鼠标悬停效果（桌面端）
     this.base.on('pointerover', () => {
       this.showRange(true);
     });
 
     this.base.on('pointerout', () => {
       this.showRange(false);
+      // 取消长按
+      this.cancelLongPress();
     });
 
-    // 点击事件（左键选择，右键回收）
+    // 指针按下（支持桌面和移动端）
     this.base.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      if (pointer.button === 2) { // 右键
+      if (pointer.button === 2) { // 右键（桌面端）
         this.onRightClick();
-      } else if (pointer.button === 0) { // 左键
+      } else if (pointer.button === 0) { // 左键（桌面端）
         this.onLeftClick();
+      } else {
+        // 移动端 touch，开始计时
+        this.startLongPress();
       }
     });
+
+    // 指针抬起（取消长按计时）
+    this.base.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      // 如果是拖拽事件，不触发点击
+      const pointerDelta = Phaser.Math.Distance.Between(pointer.downX, pointer.downY, pointer.x, pointer.y);
+      if (pointerDelta > 5) {
+        this.cancelLongPress();
+        return;
+      }
+
+      // 如果不是长按，且未触发长按，显示选中
+      if (!this.isLongPress && this.longPressTimer) {
+        this.onLeftClick();
+      }
+
+      this.cancelLongPress();
+    });
+
+    // 指针离开后取消长按
+    this.base.on('pointerupoutside', () => {
+      this.cancelLongPress();
+    });
+  }
+
+  /**
+   * 开始长按计时
+   */
+  private startLongPress(): void {
+    this.isLongPress = false;
+
+    // 显示按下视觉反馈
+    if (this.base) {
+      this.base.setScale(0.95);
+    }
+
+    // 启动长按计时器
+    this.longPressTimer = this.scene.time.delayedCall(this.LONG_PRESS_DURATION, () => {
+      this.isLongPress = true;
+      this.onRightClick(); // 触发回收菜单
+    });
+  }
+
+  /**
+   * 取消长按计时
+   */
+  private cancelLongPress(): void {
+    if (this.longPressTimer) {
+      this.longPressTimer.remove();
+      this.longPressTimer = null;
+    }
+
+    // 恢复视觉反馈
+    if (this.base) {
+      this.base.setScale(1);
+    }
   }
 
   private onRightClick(): void {
     // Show selection effect
     this.showSelected(true);
+
+    // 触觉反馈（如果支持）
+    if (navigator.vibrate) {
+      navigator.vibrate(50);
+    }
 
     // Call GameScene's showTowerRecycleMenu method directly
     const gameScene = this.scene as any;
@@ -90,8 +159,7 @@ export class Tower extends Phaser.GameObjects.Container {
   }
 
   private onLeftClick(): void {
-    // 左键点击已存在的塔楼时，应该选中它并显示回收菜单
-    // 这样玩家可以通过点击塔楼来查看回收价值
+    // 点击已存在的塔楼时，应该选中它并显示回收菜单
     const gameScene = this.scene as any;
     if (gameScene.showTowerRecycleMenu) {
       gameScene.showTowerRecycleMenu(this);

@@ -13,6 +13,9 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
   private moveSpeed: number = 200;
   private keys: { [key: string]: Phaser.Input.Keyboard.Key } = {};
 
+ // 移动端触摸控制相关
+ private joystickInputs: { dx: number; dy: number } | null = null;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
 
@@ -101,11 +104,16 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     let dx = 0;
     let dy = 0;
 
-    // 检测按键并计算移动方向
-    if (this.keys['W'].isDown) dy -= 1;
-    if (this.keys['S'].isDown) dy += 1;
-    if (this.keys['A'].isDown) dx -= 1;
-    if (this.keys['D'].isDown) dx += 1;
+    // 桌面端：检测键盘按键
+    if (this.keys['W']?.isDown) dy -= 1;
+    if (this.keys['S']?.isDown) dy += 1;
+    if (this.keys['A']?.isDown) dx -= 1;
+    if (this.keys['D']?.isDown) dx += 1;
+
+    // 移动端：应用虚拟摇杆输入（优先于键盘）
+    if (this.joystickInputs) {
+      dx = this.joystickInputs.dx;
+      dy = this.joystickInputs.dy;
 
     // 归一化对角移动
     if (dx !== 0 && dy !== 0) {
@@ -131,6 +139,34 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
       this.sprite.setRotation(0);
     }
   }
+
+  // 桌面端移动
+  if (dx !== 0 || dy !== 0) {
+    // 归一化
+    const length = Math.sqrt(dx * dx + dy * dy);
+    if (length > 0) {
+      dx /= length;
+      dy /= length;
+    }
+
+    // 应用移动
+    this.x += dx * this.moveSpeed * (delta / 1000);
+    this.y += dy * this.moveSpeed * (delta / 1000);
+
+    // 边界限制
+    this.x = Phaser.Math.Clamp(this.x, 30, 770);
+    this.y = Phaser.Math.Clamp(this.y, 50, 500);
+
+    // 根据移动方向倾斜直升机
+    if (dx > 0) {
+      this.sprite.setRotation(0.1);
+    } else if (dx < 0) {
+      this.sprite.setRotation(-0.1);
+    } else {
+      this.sprite.setRotation(0);
+    }
+  }
+}
 
   private updateRangeIndicator(): void {
     if (this.rangeCircle && this.rangeCircle.visible) {
@@ -201,6 +237,36 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     });
 
     return projectile;
+  }
+
+  /**
+   * 设置虚拟摇杆输入
+   * 用于移动端触摸控制
+   */
+  public setJoystickInput(dx: number, dy: number): void {
+    this.joystickInputs = { dx, dy };
+  }
+
+  /**
+   * 清除虚拟摇杆输入
+   */
+  public clearJoystickInput(): void {
+    this.joystickInputs = null;
+  }
+
+  /**
+   * 切换射程指示器显示
+   * 用于移动端按钮调用
+   */
+  public toggleRange(): void {
+    this.toggleRangeIndicator();
+  }
+
+  /**
+   * 获取射程指示器状态
+   */
+  public isRangeVisible(): boolean {
+    return this.rangeCircle ? this.rangeCircle.visible : false;
   }
 
   public getPosition(): { x: number; y: number } {

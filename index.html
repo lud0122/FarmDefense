@@ -2,8 +2,40 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>农场保卫战 - Farm Defender</title>
+  <style>
+    /* 禁用双击缩放和触摸默认行为 */
+    * {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    /* 禁止 iOS 手势缩放 */
+    canvas {
+      touch-action: none;
+    }
+
+    /* 确保 canvas 铺满容器 */
+    #app {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #87CEEB;
+    }
+  </style>
 </head>
 <body>
   <div id="app"></div>

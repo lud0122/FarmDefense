@@ -10,6 +10,10 @@ import { LEVELS } from '../config/levels';
 
 import { AudioSystem } from '../systems/AudioSystem';
 import { PlayerHelicopter } from '../entities/PlayerHelicopter';
+import { VirtualJoystick } from '../ui/VirtualJoystick';
+import { MobileToolbar } from '../ui/MobileToolbar';
+import { MobileTowerPanel } from '../ui/MobileTowerPanel';
+import { isMobile } from '../utils/MobileDetect';
 
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
@@ -23,6 +27,12 @@ export class GameScene extends Phaser.Scene {
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
   private previewRangeCircle: Phaser.GameObjects.Graphics | null = null;
+
+  // 移动端组件
+  private joystick: VirtualJoystick | null = null;
+  private _mobileToolbar: MobileToolbar | null = null;
+  private mobileTowerPanel: MobileTowerPanel | null = null;
+  private isMobileDevice: boolean = false;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -65,6 +75,12 @@ export class GameScene extends Phaser.Scene {
     // 创建玩家直升机
     this.playerHelicopter = new PlayerHelicopter(this, 400, 300);
 
+    // 检测是否为移动设备并创建移动端组件
+    this.isMobileDevice = isMobile();
+    if (this.isMobileDevice) {
+      this.createMobileControls();
+    }
+
     // 创建 UI
     this.createUI();
 
@@ -105,6 +121,81 @@ export class GameScene extends Phaser.Scene {
 
     // 启动背景音乐
     this.audioSystem.startBGM();
+  }
+
+  /**
+   * 创建移动端控制组件
+   */
+  private createMobileControls(): void {
+    // 创建虚拟摇杆（左下角）
+    this.joystick = new VirtualJoystick(this, 80, 480);
+
+    // 创建快捷按钮栏（右下角）
+    this.createMobileToolbar();
+
+    // 移动端使用自定义塔楼选择面板（替换桌面端的底部面板）
+    this.createMobileTowerPanel();
+  }
+
+  /**
+   * 创建移动端塔楼选择面板
+   * 替换桌面端的底部面板，提供更好的触摸体验
+   */
+  private createMobileTowerPanel(): void {
+    // 创建移动端塔楼选择面板（屏幕底部）
+    this.mobileTowerPanel = new MobileTowerPanel(this, 400, 540);
+    this.mobileTowerPanel.setButtonClickCallback((key: string) => {
+      this.selectTower(key);
+    });
+    this.add.existing(this.mobileTowerPanel);
+  }
+
+  /**
+   * 创建移动端快捷按钮栏
+   */
+  private createMobileToolbar(): void {
+    const toolbarConfig = [
+      {
+        key: 'cancel',
+        label: '取消',
+        emoji: '❌',
+        color: 0xCC3333,
+        onClick: () => {
+          this.deselectTower();
+          this.audioSystem.playClickSound();
+        }
+      },
+      {
+        key: 'range',
+        label: '射程',
+        emoji: '👁️',
+        color: 0x3388CC,
+        onClick: () => {
+          this.playerHelicopter.toggleRange();
+          this.audioSystem.playClickSound();
+        }
+      }
+    ];
+
+    this._mobileToolbar = new MobileToolbar(this, 680, 480, toolbarConfig);
+    this.add.existing(this._mobileToolbar);
+  }
+
+  /**
+   * 取消当前选中的塔
+   */
+  private deselectTower(): void {
+    if (this.selectedTowerKey) {
+      this.selectedTowerKey = null;
+      this.clearPreviewRange();
+      const currentSelectedBtn = (this as any).currentSelectedBtn;
+      if (currentSelectedBtn) {
+        currentSelectedBtn.setFillStyle(0x555555);
+        (this as any).currentSelectedBtn = null;
+      }
+    }
+    // 隐藏回收菜单
+    this.hideTowerRecycleMenu();
   }
 
   private createBackground(): void {
@@ -263,6 +354,16 @@ export class GameScene extends Phaser.Scene {
       color: '#FFFFFF'
     }).setOrigin(0.5, 0);
 
+    // 桌面端显示底部塔楼面板，移动端不显示（使用 MobileTowerPanel 替代）
+    if (!this.isMobileDevice) {
+      this.createDesktopTowerPanel();
+    }
+  }
+
+  /**
+   * 创建桌面端塔楼选择面板
+   */
+  private createDesktopTowerPanel(): void {
     // 塔楼选择面板（底部）
     const towerPanel = this.add.rectangle(400, 560, 800, 80, 0x333333);
     towerPanel.setAlpha(0.8);
@@ -363,6 +464,11 @@ export class GameScene extends Phaser.Scene {
     const pointer = this.input.activePointer;
     if (pointer.y <= 520) {
       this.updatePreviewRange(pointer.x, pointer.y);
+    }
+
+    // 同步移动端面板选中状态
+    if (this.mobileTowerPanel) {
+      this.mobileTowerPanel.selectTower(towerKey);
     }
   }
 
@@ -701,6 +807,12 @@ export class GameScene extends Phaser.Scene {
   // }
 
   update(time: number, delta: number): void {
+    // 处理虚拟摇杆输入（移动端）
+    if (this.isMobileDevice && this.joystick) {
+      const direction = this.joystick.getDirection();
+      this.playerHelicopter.setJoystickInput(direction.x, direction.y);
+    }
+
     // 更新敌人
     this.enemyManager.update(time, delta);
 
