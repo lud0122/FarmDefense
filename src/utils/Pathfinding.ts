@@ -42,6 +42,7 @@ export class Pathfinding {
 
   /**
    * Mark tower positions as obstacles
+   * Towers are impassable - enemies must navigate around them
    */
   public setObstacles(obstacles: Array<{ x: number; y: number; radius: number }>): void {
     this.initializeGrid();
@@ -49,7 +50,8 @@ export class Pathfinding {
     for (const obs of obstacles) {
       const gridX = Math.floor(obs.x / GRID_CONFIG.CELL_SIZE);
       const gridY = Math.floor(obs.y / GRID_CONFIG.CELL_SIZE);
-      const radiusCells = Math.ceil(obs.radius / GRID_CONFIG.CELL_SIZE);
+      // Larger buffer to ensure towers are fully blocked
+      const radiusCells = Math.max(2, Math.ceil((obs.radius + 10) / GRID_CONFIG.CELL_SIZE));
 
       for (let y = gridY - radiusCells; y <= gridY + radiusCells; y++) {
         for (let x = gridX - radiusCells; x <= gridX + radiusCells; x++) {
@@ -142,9 +144,9 @@ export class Pathfinding {
 
   private getNeighbors(node: GridNode): GridNode[] {
     const neighbors: GridNode[] = [];
+    // Only 4-directional movement (no diagonals) to prevent clipping through towers
     const directions = [
-      { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 },
-      { x: -1, y: -1 }, { x: 1, y: -1 }, { x: -1, y: 1 }, { x: 1, y: 1 }
+      { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 }
     ];
 
     for (const dir of directions) {

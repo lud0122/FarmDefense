@@ -34,7 +34,7 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
 
   // Pathfinding update parameters
   private pathfindingCooldown: number = 0;
-  private readonly PATHFINDING_INTERVAL: number = 500; // Recalculate path every 0.5 second
+  private readonly PATHFINDING_INTERVAL: number = 300; // Recalculate path frequently (0.3s) to respond to new towers
 
   constructor(
     scene: Phaser.Scene,
@@ -166,18 +166,8 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
 
   private moveAlongPath(delta: number): void {
     if (this.pathIndex >= this.currentPath.length) {
-      // Reached end of calculated path
-      // Move directly toward end if close enough
-      const dx = this.pathEnd.x - this.x;
-      const dy = this.pathEnd.y - this.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance > 5) {
-        const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
-        const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
-        this.x += moveX;
-        this.y += moveY;
-      }
+      // No path available - try to move directly to end
+      this.moveDirectlyToEnd(delta);
       return;
     }
 
@@ -190,13 +180,54 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
     if (distance < 10) {
       // Reached this node, move to next
       this.pathIndex++;
-    } else {
+    } else if (distance > 0) {
       // Move toward target
       const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
       const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
-      this.x += moveX;
-      this.y += moveY;
+
+      // Check if movement would put us inside a tower
+      const nextX = this.x + moveX;
+      const nextY = this.y + moveY;
+
+      if (!this.isPositionBlocked(nextX, nextY)) {
+        this.x = nextX;
+        this.y = nextY;
+      } else {
+        // We're blocked - force path recalculation
+        this.pathfindingCooldown = 0;
+      }
     }
+  }
+
+  private moveDirectlyToEnd(delta: number): void {
+    const dx = this.pathEnd.x - this.x;
+    const dy = this.pathEnd.y - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance > 5) {
+      const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+      const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+
+      // Only move if not blocked
+      const nextX = this.x + moveX;
+      const nextY = this.y + moveY;
+
+      if (!this.isPositionBlocked(nextX, nextY)) {
+        this.x = nextX;
+        this.y = nextY;
+      }
+    }
+  }
+
+  private isPositionBlocked(x: number, y: number): boolean {
+    const obstacles = this.getObstacles();
+    for (const obs of obstacles) {
+      const distance = Math.sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2);
+      if (distance < obs.radius + 15) { // 15px buffer
+        return true;
+      }
+    }
+    return false;
   }
 
   public reachedEnd(): boolean {
