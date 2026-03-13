@@ -1,6 +1,13 @@
 import Phaser from 'phaser';
-import { Enemy } from './Enemy';
 import { Projectile } from './Projectile';
+
+// Enemy-like interface for targeting (works with Enemy and SmartEnemy)
+interface Targetable {
+  x: number;
+  y: number;
+  active: boolean;
+  getPosition(): { x: number; y: number };
+}
 
 export class PlayerHelicopter extends Phaser.GameObjects.Container {
   private sprite!: Phaser.GameObjects.Text;
@@ -13,8 +20,8 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
   private moveSpeed: number = 200;
   private keys: { [key: string]: Phaser.Input.Keyboard.Key } = {};
 
- // 移动端触摸控制相关
- private joystickInputs: { dx: number; dy: number } | null = null;
+  // 移动端触摸控制相关
+  private joystickInputs: { dx: number; dy: number } | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
@@ -85,7 +92,7 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     }
   }
 
-  public update(time: number, delta: number, enemies: Enemy[]): Phaser.GameObjects.GameObject | null {
+  public update(time: number, delta: number, enemies: Targetable[]): Phaser.GameObjects.GameObject | null {
     this.handleMovement(delta);
     this.updateRangeIndicator();
 
@@ -115,58 +122,58 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
       dx = this.joystickInputs.dx;
       dy = this.joystickInputs.dy;
 
-    // 归一化对角移动
-    if (dx !== 0 && dy !== 0) {
+      // 归一化对角移动
+      if (dx !== 0 && dy !== 0) {
+        const length = Math.sqrt(dx * dx + dy * dy);
+        dx /= length;
+        dy /= length;
+      }
+
+      // 应用移动
+      this.x += dx * this.moveSpeed * (delta / 1000);
+      this.y += dy * this.moveSpeed * (delta / 1000);
+
+      // 边界限制
+      this.x = Phaser.Math.Clamp(this.x, 30, 770);
+      this.y = Phaser.Math.Clamp(this.y, 50, 500);
+
+      // 根据移动方向倾斜直升机
+      if (dx > 0) {
+        this.sprite.setRotation(0.1);
+      } else if (dx < 0) {
+        this.sprite.setRotation(-0.1);
+      } else {
+        this.sprite.setRotation(0);
+      }
+    }
+
+    // 桌面端移动
+    if (dx !== 0 || dy !== 0) {
+      // 归一化
       const length = Math.sqrt(dx * dx + dy * dy);
-      dx /= length;
-      dy /= length;
-    }
+      if (length > 0) {
+        dx /= length;
+        dy /= length;
+      }
 
-    // 应用移动
-    this.x += dx * this.moveSpeed * (delta / 1000);
-    this.y += dy * this.moveSpeed * (delta / 1000);
+      // 应用移动
+      this.x += dx * this.moveSpeed * (delta / 1000);
+      this.y += dy * this.moveSpeed * (delta / 1000);
 
-    // 边界限制
-    this.x = Phaser.Math.Clamp(this.x, 30, 770);
-    this.y = Phaser.Math.Clamp(this.y, 50, 500);
+      // 边界限制
+      this.x = Phaser.Math.Clamp(this.x, 30, 770);
+      this.y = Phaser.Math.Clamp(this.y, 50, 500);
 
-    // 根据移动方向倾斜直升机
-    if (dx > 0) {
-      this.sprite.setRotation(0.1);
-    } else if (dx < 0) {
-      this.sprite.setRotation(-0.1);
-    } else {
-      this.sprite.setRotation(0);
-    }
-  }
-
-  // 桌面端移动
-  if (dx !== 0 || dy !== 0) {
-    // 归一化
-    const length = Math.sqrt(dx * dx + dy * dy);
-    if (length > 0) {
-      dx /= length;
-      dy /= length;
-    }
-
-    // 应用移动
-    this.x += dx * this.moveSpeed * (delta / 1000);
-    this.y += dy * this.moveSpeed * (delta / 1000);
-
-    // 边界限制
-    this.x = Phaser.Math.Clamp(this.x, 30, 770);
-    this.y = Phaser.Math.Clamp(this.y, 50, 500);
-
-    // 根据移动方向倾斜直升机
-    if (dx > 0) {
-      this.sprite.setRotation(0.1);
-    } else if (dx < 0) {
-      this.sprite.setRotation(-0.1);
-    } else {
-      this.sprite.setRotation(0);
+      // 根据移动方向倾斜直升机
+      if (dx > 0) {
+        this.sprite.setRotation(0.1);
+      } else if (dx < 0) {
+        this.sprite.setRotation(-0.1);
+      } else {
+        this.sprite.setRotation(0);
+      }
     }
   }
-}
 
   private updateRangeIndicator(): void {
     if (this.rangeCircle && this.rangeCircle.visible) {
@@ -176,7 +183,7 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     }
   }
 
-  private handleAutoAimShoot(time: number, enemies: Enemy[]): Phaser.GameObjects.GameObject | null {
+  private handleAutoAimShoot(time: number, enemies: Targetable[]): Phaser.GameObjects.GameObject | null {
     // 查找范围内的敌人
     const target = this.findTarget(enemies);
     if (target) {
@@ -193,9 +200,9 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     return null;
   }
 
-  private findTarget(enemies: Enemy[]): Enemy | null {
+  private findTarget(enemies: Targetable[]): Targetable | null {
     const range = 200; // 射程 200
-    let closest: Enemy | null = null;
+    let closest: Targetable | null = null;
     let closestDistance = Infinity;
 
     for (const enemy of enemies) {
@@ -211,7 +218,7 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
     return closest;
   }
 
-  private fire(target: Enemy): Projectile {
+  private fire(target: Targetable): Projectile {
     // 播放射击音效
     const gameScene = this.scene as any;
     if (gameScene.audioSystem) {
@@ -223,7 +230,7 @@ export class PlayerHelicopter extends Phaser.GameObjects.Container {
       this.scene,
       this.x,
       this.y,
-      target,
+      target as any,
       this.bulletSpeed,
       this.bulletDamage,
       0x00FF00 // 绿色子弹

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { Enemy } from '../entities/Enemy';
+import { SmartEnemy } from '../entities/SmartEnemy';
 import { EnemyConfig } from '../config/enemies';
+import { Pathfinding } from '../utils/Pathfinding';
 
 interface EnemySpawnEvent {
   enemyKey: string;
@@ -9,12 +11,18 @@ interface EnemySpawnEvent {
 }
 
 export class EnemyManager {
-  private enemies: Enemy[] = [];
+  private enemies: (Enemy | SmartEnemy)[] = [];
   private scene: Phaser.Scene;
   private path: Array<{ x: number; y: number }>;
   private spawnQueue: EnemySpawnEvent[] = [];
   private onEnemyDeath: (reward: number) => void;
   private onEnemyReachEnd: () => void;
+
+  // Level 5 smart enemy dependencies
+  private pathfinding: Pathfinding | null = null;
+  private getObstacles: (() => Array<{ x: number; y: number; radius: number }>) | null = null;
+  private getCrops: (() => Phaser.GameObjects.Container[]) | null = null;
+  private isSmartLevel: boolean = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -26,6 +34,20 @@ export class EnemyManager {
     this.path = path;
     this.onEnemyDeath = onEnemyDeath;
     this.onEnemyReachEnd = onEnemyReachEnd;
+  }
+
+  /**
+   * Enable smart enemy mode for Level 5
+   */
+  public enableSmartMode(
+    pathfinding: Pathfinding,
+    getObstacles: () => Array<{ x: number; y: number; radius: number }>,
+    getCrops: () => Phaser.GameObjects.Container[]
+  ): void {
+    this.isSmartLevel = true;
+    this.pathfinding = pathfinding;
+    this.getObstacles = getObstacles;
+    this.getCrops = getCrops;
   }
 
   public spawn(config: EnemyConfig, delay: number = 0): void {
@@ -64,8 +86,8 @@ export class EnemyManager {
       if (enemy.active) {
         enemy.update(time, delta);
 
-        // 检查是否到达终点
-        if (enemy.reachedEnd()) {
+        // 检查是否到达终点（只有常规敌人才检查）
+        if ('reachedEnd' in enemy && enemy.reachedEnd()) {
           this.onEnemyReachEnd();
           this.removeEnemy(enemy);
           enemy.destroy();
@@ -94,29 +116,49 @@ export class EnemyManager {
   }
 
   private createEnemy(config: EnemyConfig): void {
-    const startPoint = this.path[0];
-    const enemy = new Enemy(
-      this.scene,
-      startPoint.x,
-      startPoint.y,
-      config,
-      this.path,
-      () => {
-        this.onEnemyDeath(config.reward);
-        this.removeEnemy(enemy);
-      }
-    );
-    this.enemies.push(enemy);
+    // Smart enemy mode - spawn SmartEnemy
+    if (config.isSmart && this.isSmartLevel && this.pathfinding && this.getObstacles && this.getCrops) {
+      const startPoint = this.path[0];
+      const smartEnemy = new SmartEnemy(
+        this.scene,
+        startPoint.x,
+        startPoint.y,
+        config,
+        this.pathfinding,
+        this.getObstacles,
+        this.getCrops,
+        () => {
+          this.onEnemyDeath(config.reward);
+          this.removeEnemy(smartEnemy);
+        }
+      );
+      this.enemies.push(smartEnemy);
+    } else {
+      // Regular enemy mode
+      const startPoint = this.path[0];
+      const enemy = new Enemy(
+        this.scene,
+        startPoint.x,
+        startPoint.y,
+        config,
+        this.path,
+        () => {
+          this.onEnemyDeath(config.reward);
+          this.removeEnemy(enemy);
+        }
+      );
+      this.enemies.push(enemy);
+    }
   }
 
-  private removeEnemy(enemy: Enemy): void {
+  private removeEnemy(enemy: Enemy | SmartEnemy): void {
     const index = this.enemies.indexOf(enemy);
     if (index > -1) {
       this.enemies.splice(index, 1);
     }
   }
 
-  public getEnemies(): Enemy[] {
+  public getEnemies(): (Enemy | SmartEnemy)[] {
     return this.enemies.filter(e => e.active);
   }
 
@@ -132,5 +174,9 @@ export class EnemyManager {
     }
     this.enemies = [];
     this.spawnQueue = [];
+    this.pathfinding = null;
+    this.getObstacles = null;
+    this.getCrops = null;
+    this.isSmartLevel = false;
   }
 }

@@ -3,10 +3,12 @@ import { EnemyManager } from '../systems/EnemyManager';
 import { TowerManager } from '../systems/TowerManager';
 import { ProjectileManager } from '../systems/ProjectileManager';
 import { EconomySystem } from '../systems/EconomySystem';
+import { CropManager } from '../systems/CropManager';
 import { PATH_POINTS, GAME_CONFIG } from '../config/constants';
 import { ENEMIES } from '../config/enemies';
 import { TOWERS } from '../config/towers';
 import { LEVELS } from '../config/levels';
+import { Pathfinding } from '../utils/Pathfinding';
 
 import { AudioSystem } from '../systems/AudioSystem';
 import { PlayerHelicopter } from '../entities/PlayerHelicopter';
@@ -18,6 +20,7 @@ import { isMobile } from '../utils/MobileDetect';
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
   private towerManager!: TowerManager;
+  private cropManager!: CropManager; // Level 5
   private projectileManager!: ProjectileManager;
   private economySystem!: EconomySystem;
   private audioSystem!: AudioSystem;
@@ -27,6 +30,10 @@ export class GameScene extends Phaser.Scene {
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
   private previewRangeCircle: Phaser.GameObjects.Graphics | null = null;
+
+  // Level 5 smart enemy mode
+  private pathfinding!: Pathfinding | null;
+  private isSmartLevel: boolean = false;
 
   // 移动端组件
   private joystick: VirtualJoystick | null = null;
@@ -71,6 +78,10 @@ export class GameScene extends Phaser.Scene {
 
     this.towerManager = new TowerManager(this);
     this.projectileManager = new ProjectileManager(this);
+
+    // Initialize Level 5 components
+    this.cropManager = new CropManager(this);
+    this.pathfinding = new Pathfinding();
 
     // 创建玩家直升机
     this.playerHelicopter = new PlayerHelicopter(this, 400, 300);
@@ -709,10 +720,18 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // Check if this is Level 5 (smart enemy mode)
+    this.isSmartLevel = level.isSmartLevel || false;
+
     if (this.currentWave >= level.waves.length) {
       // 当前关卡完成，进入下一关
       this.currentLevel++;
       this.currentWave = 0;
+      // Clear crops and disable smart mode when changing levels
+      if (this.cropManager) {
+        this.cropManager.clear();
+      }
+      this.isSmartLevel = false;
       console.log(`Level ${this.currentLevel} complete!`);
       this.startNextWave();
       return;
@@ -720,6 +739,20 @@ export class GameScene extends Phaser.Scene {
 
     this.waveInProgress = true;
     this.currentWave++;
+
+    // Level 5: Place crops on first wave
+    if (this.isSmartLevel && this.currentWave === 1 && this.cropManager) {
+      this.cropManager.placeCropGrid(100, 100, 600, 400, 80, 'wheat');
+    }
+
+    // Enable smart enemy mode for Level 5
+    if (this.isSmartLevel && this.pathfinding) {
+      this.enemyManager.enableSmartMode(
+        this.pathfinding,
+        () => this.towerManager.getTowers().map(t => ({ x: t.x, y: t.y, radius: 40 })),
+        () => this.cropManager.getCrops()
+      );
+    }
 
     // 获取当前波次配置
     const waveConfig = level.waves[this.currentWave - 1];
@@ -817,7 +850,8 @@ export class GameScene extends Phaser.Scene {
     this.enemyManager.update(time, delta);
 
     // 更新塔楼并发射子弹
-    const newProjectiles = this.towerManager.update(time, delta, this.enemyManager.getEnemies());
+    const enemies = this.enemyManager.getEnemies();
+    const newProjectiles = this.towerManager.update(time, delta, enemies as any[]);
     for (const projectile of newProjectiles) {
       this.projectileManager.addProjectile(projectile);
     }
