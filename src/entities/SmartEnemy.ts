@@ -166,8 +166,8 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
 
   private moveAlongPath(delta: number): void {
     if (this.pathIndex >= this.currentPath.length) {
-      // No path available - try to move directly to end
-      this.moveDirectlyToEnd(delta);
+      // No path available - use escape logic
+      this.moveWithEscape(delta);
       return;
     }
 
@@ -200,87 +200,99 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
       return;
     }
 
-    // Blocked - try sliding along obstacle instead of stopping
+    // Blocked - try sliding along obstacle
+    if (!this.trySlideMovement(moveX, moveY)) {
+      // Completely stuck - use escape logic
+      this.moveWithEscape(delta);
+    }
+  }
+
+  private trySlideMovement(moveX: number, moveY: number): boolean {
     // Try X-only movement
     if (!this.isPositionBlocked(this.x + moveX, this.y)) {
       this.x += moveX;
-      return;
+      return true;
     }
 
     // Try Y-only movement
     if (!this.isPositionBlocked(this.x, this.y + moveY)) {
       this.y += moveY;
-      return;
+      return true;
     }
 
-    // Try perpendicular slide to get around
+    // Try perpendicular slide
     const slideX = -moveY;
     const slideY = moveX;
     if (!this.isPositionBlocked(this.x + slideX, this.y + slideY)) {
       this.x += slideX;
       this.y += slideY;
-      return;
+      return true;
     }
 
     if (!this.isPositionBlocked(this.x - slideX, this.y - slideY)) {
       this.x -= slideX;
       this.y -= slideY;
-      return;
+      return true;
     }
 
-    // All directions blocked - advance to next path node
-    this.pathIndex++;
+    return false;
   }
 
-  private moveDirectlyToEnd(delta: number): void {
-    const dx = this.pathEnd.x - this.x;
-    const dy = this.pathEnd.y - this.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+  private moveWithEscape(delta: number): void {
+    // Use pathfinding to find best escape direction
+    const escapeDir = this.pathfinding.findEscapeDirection(
+      this.x,
+      this.y,
+      this.pathEnd.x,
+      this.pathEnd.y
+    );
 
-    if (distance <= 5) return;
+    if (escapeDir) {
+      // Move in escape direction at full speed
+      const moveX = escapeDir.x * this.currentSpeed * 2 * (delta / 1000); // 2x speed for escape
+      const moveY = escapeDir.y * this.currentSpeed * 2 * (delta / 1000);
 
-    const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
-    const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+      // Only move if not blocked
+      const nextX = this.x + moveX;
+      const nextY = this.y + moveY;
 
-    // Try to move in primary direction
-    const nextX = this.x + moveX;
-    const nextY = this.y + moveY;
+      if (!this.isPositionBlocked(nextX, nextY)) {
+        this.x = nextX;
+        this.y = nextY;
+      } else {
+        // Try any open direction
+        this.tryAnyDirection(delta);
+      }
+    } else {
+      // No escape found, try any direction
+      this.tryAnyDirection(delta);
+    }
+  }
 
-    if (!this.isPositionBlocked(nextX, nextY)) {
-      this.x = nextX;
-      this.y = nextY;
-      return;
+  private tryAnyDirection(delta: number): void {
+    // Try all 8 directions, find one that works
+    const directions = [
+      { x: 0, y: -1 }, { x: 1, y: -1 }, { x: 1, y: 0 }, { x: 1, y: 1 },
+      { x: 0, y: 1 }, { x: -1, y: 1 }, { x: -1, y: 0 }, { x: -1, y: -1 }
+    ];
+
+    for (const dir of directions) {
+      const moveX = dir.x * this.currentSpeed * (delta / 1000);
+      const moveY = dir.y * this.currentSpeed * (delta / 1000);
+
+      const nextX = this.x + moveX;
+      const nextY = this.y + moveY;
+
+      if (!this.isPositionBlocked(nextX, nextY)) {
+        this.x = nextX;
+        this.y = nextY;
+        return;
+      }
     }
 
-    // Blocked - try sliding along obstacles
-    // Try moving only in X direction
-    if (!this.isPositionBlocked(this.x + moveX, this.y)) {
-      this.x += moveX;
-      return;
-    }
-
-    // Try moving only in Y direction
-    if (!this.isPositionBlocked(this.x, this.y + moveY)) {
-      this.y += moveY;
-      return;
-    }
-
-    // Try perpendicular directions to get around obstacle
-    const perpendicularX = -moveY;
-    const perpendicularY = moveX;
-    const perpDist = Math.sqrt(perpendicularX * perpendicularX + perpendicularY * perpendicularY) || 1;
-    const slideX = (perpendicularX / perpDist) * this.currentSpeed * (delta / 1000);
-    const slideY = (perpendicularY / perpDist) * this.currentSpeed * (delta / 1000);
-
-    // Try both perpendicular directions
-    if (!this.isPositionBlocked(this.x + slideX, this.y + slideY)) {
-      this.x += slideX;
-      this.y += slideY;
-    } else if (!this.isPositionBlocked(this.x - slideX, this.y - slideY)) {
-      this.x -= slideX;
-      this.y -= slideY;
-    }
-    // If all blocked, stay and let pathfinder find new route
+    // All blocked - force path recalculation aggressively
+    this.pathfindingCooldown = 0;
+    this.calculatePathToEnd();
   }
 
   private isPositionBlocked(x: number, y: number): boolean {
