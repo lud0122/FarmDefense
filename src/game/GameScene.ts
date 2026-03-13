@@ -744,17 +744,12 @@ export class GameScene extends Phaser.Scene {
     this.waveInProgress = true;
     this.currentWave++;
 
-    // Level 5: Place crops on first wave
-    if (this.isSmartLevel && this.currentWave === 1 && this.cropManager) {
-      this.cropManager.placeCropGrid(100, 100, 600, 400, 80, 'wheat');
-    }
-
     // Enable smart enemy mode for Level 5
+    // Smart enemies will pathfind to end, avoiding towers
     if (this.isSmartLevel && this.pathfinding) {
       this.enemyManager.enableSmartMode(
         this.pathfinding,
-        () => this.towerManager.getTowers().map(t => ({ x: t.x, y: t.y, radius: 40 })),
-        () => this.cropManager.getCrops()
+        () => this.towerManager.getTowers().map(t => ({ x: t.x, y: t.y, radius: 40 }))
       );
     }
 

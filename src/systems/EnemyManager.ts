@@ -21,7 +21,6 @@ export class EnemyManager {
   // Level 5 smart enemy dependencies
   private pathfinding: Pathfinding | null = null;
   private getObstacles: (() => Array<{ x: number; y: number; radius: number }>) | null = null;
-  private getCrops: (() => Phaser.GameObjects.Container[]) | null = null;
   private isSmartLevel: boolean = false;
 
   constructor(
@@ -41,13 +40,11 @@ export class EnemyManager {
    */
   public enableSmartMode(
     pathfinding: Pathfinding,
-    getObstacles: () => Array<{ x: number; y: number; radius: number }>,
-    getCrops: () => Phaser.GameObjects.Container[]
+    getObstacles: () => Array<{ x: number; y: number; radius: number }>
   ): void {
     this.isSmartLevel = true;
     this.pathfinding = pathfinding;
     this.getObstacles = getObstacles;
-    this.getCrops = getCrops;
   }
 
   public spawn(config: EnemyConfig, delay: number = 0): void {
@@ -116,9 +113,10 @@ export class EnemyManager {
   }
 
   private createEnemy(config: EnemyConfig): void {
-    // Smart enemy mode - spawn SmartEnemy
-    if (config.isSmart && this.isSmartLevel && this.pathfinding && this.getObstacles && this.getCrops) {
+    // Smart enemy mode - spawn SmartEnemy that finds path to end
+    if (config.isSmart && this.isSmartLevel && this.pathfinding && this.getObstacles) {
       const startPoint = this.path[0];
+      const endPoint = this.path[this.path.length - 1];
       const smartEnemy = new SmartEnemy(
         this.scene,
         startPoint.x,
@@ -126,11 +124,12 @@ export class EnemyManager {
         config,
         this.pathfinding,
         this.getObstacles,
-        this.getCrops,
+        () => [], // Empty crops function (not used)
         () => {
           this.onEnemyDeath(config.reward);
           this.removeEnemy(smartEnemy);
-        }
+        },
+        endPoint
       );
       this.enemies.push(smartEnemy);
     } else {
@@ -176,7 +175,6 @@ export class EnemyManager {
     this.spawnQueue = [];
     this.pathfinding = null;
     this.getObstacles = null;
-    this.getCrops = null;
     this.isSmartLevel = false;
   }
 }
