@@ -45,7 +45,11 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
-  create(): void {
+  create(data?: { startingLevel?: number }): void {
+    // 获取起始关卡（从菜单跳转时指定）
+    if (data?.startingLevel !== undefined) {
+      this.currentLevel = data.startingLevel;
+    }
     // 初始化音效系统
     this.audioSystem = new AudioSystem(this);
     this.audioSystem.create();
