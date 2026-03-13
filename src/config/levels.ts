@@ -4,6 +4,7 @@ export interface LevelConfig {
   startingMoney: number;
   maxLives: number;
   waves: WaveConfig[][];
+  isSmartLevel?: boolean; // New field for Level 5
 }
 
 export interface WaveConfig {
@@ -95,6 +96,34 @@ export const LEVELS: LevelConfig[] = [
         { enemyKey: 'fox', count: 40, interval: 350 },
         { enemyKey: 'eagle', count: 30, interval: 500 },
         { enemyKey: 'bear', count: 12, interval: 1200 }
+      ]
+    ]
+  },
+  // 新增第5关：智慧农场
+  {
+    number: 5,
+    name: '智慧农场',
+    startingMoney: 2000,
+    maxLives: 30,
+    isSmartLevel: true,
+    waves: [
+      // 第1波：智慧兔群
+      [{ enemyKey: 'smartRabbit', count: 25, interval: 500 }],
+      // 第2波：智慧野猪
+      [{ enemyKey: 'smartBoar', count: 15, interval: 800 }],
+      // 第3波：智慧狐狸突袭
+      [{ enemyKey: 'smartFox', count: 20, interval: 600 }],
+      // 第4波：智慧老鹰空袭
+      [{ enemyKey: 'smartEagle', count: 18, interval: 700 }],
+      // 第5波：智慧熊群
+      [{ enemyKey: 'smartBear', count: 10, interval: 1500 }],
+      // 第6波：智慧混合大军
+      [
+        { enemyKey: 'smartRabbit', count: 35, interval: 400 },
+        { enemyKey: 'smartBoar', count: 20, interval: 700 },
+        { enemyKey: 'smartFox', count: 15, interval: 550 },
+        { enemyKey: 'smartEagle', count: 12, interval: 650 },
+        { enemyKey: 'smartBear', count: 8, interval: 1300 }
       ]
     ]
   }
