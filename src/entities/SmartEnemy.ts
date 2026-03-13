@@ -180,23 +180,56 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
     if (distance < 10) {
       // Reached this node, move to next
       this.pathIndex++;
-    } else if (distance > 0) {
-      // Move toward target
-      const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
-      const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
-
-      // Check if movement would put us inside a tower
-      const nextX = this.x + moveX;
-      const nextY = this.y + moveY;
-
-      if (!this.isPositionBlocked(nextX, nextY)) {
-        this.x = nextX;
-        this.y = nextY;
-      } else {
-        // We're blocked - force path recalculation
-        this.pathfindingCooldown = 0;
-      }
+      return;
     }
+
+    if (distance <= 0) return;
+
+    // Move toward target
+    const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+    const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+
+    // Check if movement would put us inside a tower
+    const nextX = this.x + moveX;
+    const nextY = this.y + moveY;
+
+    if (!this.isPositionBlocked(nextX, nextY)) {
+      // Normal movement
+      this.x = nextX;
+      this.y = nextY;
+      return;
+    }
+
+    // Blocked - try sliding along obstacle instead of stopping
+    // Try X-only movement
+    if (!this.isPositionBlocked(this.x + moveX, this.y)) {
+      this.x += moveX;
+      return;
+    }
+
+    // Try Y-only movement
+    if (!this.isPositionBlocked(this.x, this.y + moveY)) {
+      this.y += moveY;
+      return;
+    }
+
+    // Try perpendicular slide to get around
+    const slideX = -moveY;
+    const slideY = moveX;
+    if (!this.isPositionBlocked(this.x + slideX, this.y + slideY)) {
+      this.x += slideX;
+      this.y += slideY;
+      return;
+    }
+
+    if (!this.isPositionBlocked(this.x - slideX, this.y - slideY)) {
+      this.x -= slideX;
+      this.y -= slideY;
+      return;
+    }
+
+    // All directions blocked - advance to next path node
+    this.pathIndex++;
   }
 
   private moveDirectlyToEnd(delta: number): void {
@@ -204,26 +237,57 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
     const dy = this.pathEnd.y - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance > 5) {
-      const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
-      const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+    if (distance <= 5) return;
 
-      // Only move if not blocked
-      const nextX = this.x + moveX;
-      const nextY = this.y + moveY;
+    const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+    const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
 
-      if (!this.isPositionBlocked(nextX, nextY)) {
-        this.x = nextX;
-        this.y = nextY;
-      }
+    // Try to move in primary direction
+    const nextX = this.x + moveX;
+    const nextY = this.y + moveY;
+
+    if (!this.isPositionBlocked(nextX, nextY)) {
+      this.x = nextX;
+      this.y = nextY;
+      return;
     }
+
+    // Blocked - try sliding along obstacles
+    // Try moving only in X direction
+    if (!this.isPositionBlocked(this.x + moveX, this.y)) {
+      this.x += moveX;
+      return;
+    }
+
+    // Try moving only in Y direction
+    if (!this.isPositionBlocked(this.x, this.y + moveY)) {
+      this.y += moveY;
+      return;
+    }
+
+    // Try perpendicular directions to get around obstacle
+    const perpendicularX = -moveY;
+    const perpendicularY = moveX;
+    const perpDist = Math.sqrt(perpendicularX * perpendicularX + perpendicularY * perpendicularY) || 1;
+    const slideX = (perpendicularX / perpDist) * this.currentSpeed * (delta / 1000);
+    const slideY = (perpendicularY / perpDist) * this.currentSpeed * (delta / 1000);
+
+    // Try both perpendicular directions
+    if (!this.isPositionBlocked(this.x + slideX, this.y + slideY)) {
+      this.x += slideX;
+      this.y += slideY;
+    } else if (!this.isPositionBlocked(this.x - slideX, this.y - slideY)) {
+      this.x -= slideX;
+      this.y -= slideY;
+    }
+    // If all blocked, stay and let pathfinder find new route
   }
 
   private isPositionBlocked(x: number, y: number): boolean {
     const obstacles = this.getObstacles();
     for (const obs of obstacles) {
       const distance = Math.sqrt((x - obs.x) ** 2 + (y - obs.y) ** 2);
-      if (distance < obs.radius + 15) { // 15px buffer
+      if (distance < obs.radius + 10) { // 10px buffer
         return true;
       }
     }
