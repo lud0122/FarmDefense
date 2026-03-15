@@ -749,7 +749,7 @@ export class GameScene extends Phaser.Scene {
     if (this.isSmartLevel && this.pathfinding) {
       this.enemyManager.enableSmartMode(
         this.pathfinding,
-        () => this.towerManager.getTowers().map(t => ({ x: t.x, y: t.y, radius: 40 }))
+        () => this.towerManager.getTowers().map(t => ({ x: t.x, y: t.y, radius: 20 }))
       );
     }
 

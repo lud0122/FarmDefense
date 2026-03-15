@@ -50,8 +50,9 @@ export class Pathfinding {
     for (const obs of obstacles) {
       const gridX = Math.floor(obs.x / GRID_CONFIG.CELL_SIZE);
       const gridY = Math.floor(obs.y / GRID_CONFIG.CELL_SIZE);
-      // Larger buffer to ensure towers are fully blocked
-      const radiusCells = Math.max(2, Math.ceil((obs.radius + 10) / GRID_CONFIG.CELL_SIZE));
+      // Calculate radius in grid cells based on actual radius
+      // Use small buffer (5px) for smooth navigation, not large buffer that blocks corridors
+      const radiusCells = Math.ceil((obs.radius + 5) / GRID_CONFIG.CELL_SIZE);
 
       for (let y = gridY - radiusCells; y <= gridY + radiusCells; y++) {
         for (let x = gridX - radiusCells; x <= gridX + radiusCells; x++) {
@@ -178,5 +179,97 @@ export class Pathfinding {
     }
 
     return path;
+  }
+
+  /**
+   * Find escape direction when trapped by obstacles
+   * Returns direction vector pointing away from nearest obstacles
+   */
+  public findEscapeDirection(
+    x: number,
+    y: number,
+    targetX: number,
+    targetY: number
+  ): { x: number; y: number } | null {
+    const node = this.getNodeAt(x, y);
+    if (!node) return null;
+
+    // Check all 8 directions
+    const directions = [
+      { x: 0, y: -1, label: 'up' },
+      { x: 1, y: -1, label: 'upRight' },
+      { x: 1, y: 0, label: 'right' },
+      { x: 1, y: 1, label: 'downRight' },
+      { x: 0, y: 1, label: 'down' },
+      { x: -1, y: 1, label: 'downLeft' },
+      { x: -1, y: 0, label: 'left' },
+      { x: -1, y: -1, label: 'upLeft' }
+    ];
+
+    // Score each direction
+    let bestDirection: { x: number; y: number } | null = null;
+    let bestScore = -Infinity;
+
+    for (const dir of directions) {
+      const nx = node.x + dir.x;
+      const ny = node.y + dir.y;
+
+      if (!this.isValidCell(nx, ny)) continue;
+      const neighbor = this.grid[ny][nx];
+
+      // Skip unwalkable cells
+      if (!neighbor.walkable) continue;
+
+      // Calculate score: prefer directions away from obstacles and toward target
+      let score = 0;
+
+      // Bonus for walkable
+      score += 100;
+
+      // Bonus for direction toward target
+      const dirToTargetX = Math.sign(targetX - x);
+      const dirToTargetY = Math.sign(targetY - y);
+      const alignment = (dir.x * dirToTargetX + dir.y * dirToTargetY);
+      score += alignment * 50;
+
+      // Check if this direction leads to open space
+      let openSpaceCount = 0;
+      for (let i = 1; i <= 3; i++) {
+        const checkX = node.x + dir.x * i;
+        const checkY = node.y + dir.y * i;
+        if (this.isValidCell(checkX, checkY) && this.grid[checkY][checkX].walkable) {
+          openSpaceCount++;
+        } else {
+          break;
+        }
+      }
+      score += openSpaceCount * 20;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestDirection = { x: dir.x, y: dir.y };
+      }
+    }
+
+    // Return normalized direction
+    if (bestDirection) {
+      const length = Math.sqrt(bestDirection.x * bestDirection.x + bestDirection.y * bestDirection.y) || 1;
+      return {
+        x: bestDirection.x / length,
+        y: bestDirection.y / length
+      };
+    }
+
+    // No escape found - try any walkable neighbor
+    for (const dir of directions) {
+      const nx = node.x + dir.x;
+      const ny = node.y + dir.y;
+      if (this.isValidCell(nx, ny) && this.grid[ny][nx].walkable) {
+        const length = Math.sqrt(dir.x * dir.x + dir.y * dir.y) || 1;
+        return { x: dir.x / length, y: dir.y / length };
+      }
+    }
+
+    return null;
   }
 }
