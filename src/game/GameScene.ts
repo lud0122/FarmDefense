@@ -670,6 +670,21 @@ export class GameScene extends Phaser.Scene {
         return; // Clicked on panel, do nothing
       }
 
+			// 移动端：检查是否点击了移动端UI区域（工具栏和塔选择面板）
+			if (this.isMobileDevice) {
+				// 检查移动端工具栏区域（右下角，约 y: 450-550, x: 600-800）
+				const clickedMobileToolbar = pointer.y > 450 && pointer.x > 600;
+				if (clickedMobileToolbar) {
+					return; // 点击了移动端工具栏，不处理
+				}
+
+				// 检查移动端塔选择面板（底部，约 y: 500-600）
+				const clickedMobilePanel = pointer.y > 500;
+				if (clickedMobilePanel) {
+					return; // 点击了移动端塔选择面板，不处理
+				}
+			}
+
       // Check if clicked on an existing tower
       const clickedExistingTower = this.towerManager.getTowers().some(
         tower => Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, tower.x, tower.y) < 30
