@@ -10,11 +10,15 @@ export interface GameState {
 }
 
 export class UpgradeManager {
-  private scene: Phaser.Scene;
+  private _scene: Phaser.Scene;
   private baseDifficultyHealth: number = 1000; // 第5波敌人总生命值
 
   constructor(scene: Phaser.Scene) {
-    this.scene = scene;
+    this._scene = scene;
+  }
+
+  public get scene(): Phaser.Scene {
+    return this._scene;
   }
 
   /**
@@ -96,10 +100,11 @@ export class UpgradeManager {
    * 验证是否可以购买升级
    */
   public canPurchaseUpgrade(
-    upgrade: TowerUpgrade,
+    _upgrade: TowerUpgrade,
     currentMoney: number,
     cost: number
   ): boolean {
+    // 注: upgrade 参数保留用于未来扩展,如检查特定升级的前置条件
     return currentMoney >= cost;
   }
 
