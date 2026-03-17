@@ -80,8 +80,20 @@ export class GameScene extends Phaser.Scene {
       () => this.onEnemyReachEnd()
     );
 
-    this.towerManager = new TowerManager(this);
-    this.projectileManager = new ProjectileManager(this);
+    this.towerManager = new TowerManager(this, (tower) => {
+      const selectedTower = (this as any).selectedTower;
+      if (selectedTower === tower) {
+        this.hideTowerRecycleMenu();
+      }
+    });
+    this.enemyManager.setTowerProvider(() => this.towerManager.getTowers().map(tower => ({
+      x: tower.x,
+      y: tower.y,
+      active: tower.active && !tower.isDestroyed(),
+      takeDamage: (amount: number) => {
+        tower.takeDamage(amount);
+      }
+    })));
 
     // Initialize Level 5 components
     this.cropManager = new CropManager(this);
@@ -778,7 +790,7 @@ export class GameScene extends Phaser.Scene {
       interval: w.interval
     }));
 
-    this.enemyManager.spawnWave(enemyConfigs);
+    this.enemyManager.spawnWave(enemyConfigs, level.behaviorMix);
 
     // 播放波次开始音效
     this.audioSystem.playSpawnSound();

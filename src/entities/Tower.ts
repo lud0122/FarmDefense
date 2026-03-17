@@ -22,11 +22,17 @@ export class Tower extends Phaser.GameObjects.Container {
   private level: number = 1;
   private selectionIndicator: Phaser.GameObjects.Rectangle | null = null;
   private emojiIcon: Phaser.GameObjects.Text | null = null;
+  private maxHealth: number;
+  private currentHealth: number;
+  private destroyed: boolean = false;
+  private onDestroyed: ((tower: Tower) => void) | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number, config: TowerConfig) {
     super(scene, x, y);
     this.config = config;
     this.originalCost = config.cost;
+    this.maxHealth = Math.max(120, config.cost);
+    this.currentHealth = this.maxHealth;
 
     // 塔楼基座
     this.base = scene.add.rectangle(0, 0, 32, 32, config.color);
@@ -109,6 +115,35 @@ export class Tower extends Phaser.GameObjects.Container {
     });
   }
 
+  public setOnDestroyed(handler: (tower: Tower) => void): void {
+    this.onDestroyed = handler;
+  }
+
+  public takeDamage(amount: number): void {
+    if (this.destroyed) return;
+    this.currentHealth = Math.max(0, this.currentHealth - amount);
+
+    if (this.currentHealth <= 0) {
+      this.destroyed = true;
+      this.showSelected(false);
+      if (this.onDestroyed) {
+        this.onDestroyed(this);
+      }
+    }
+  }
+
+  public isDestroyed(): boolean {
+    return this.destroyed;
+  }
+
+  public getCurrentHealth(): number {
+    return this.currentHealth;
+  }
+
+  public getMaxHealth(): number {
+    return this.maxHealth;
+  }
+
   /**
    * 开始长按计时
    */
@@ -177,6 +212,7 @@ export class Tower extends Phaser.GameObjects.Container {
   }
 
   public update(time: number, _delta: number, enemies: Enemy[]): Phaser.GameObjects.GameObject | null {
+    if (this.destroyed) return null;
     if (time < this.lastFireTime + this.config.fireRate) return null;
 
     const target = this.findTarget(enemies);
@@ -253,6 +289,7 @@ export class Tower extends Phaser.GameObjects.Container {
   }
 
   public destroy(fromScene?: boolean): void {
+    this.destroyed = true;
     if (this.rangeCircle) {
       this.rangeCircle.destroy();
     }

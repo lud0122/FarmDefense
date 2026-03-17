@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { EnemyConfig } from '../config/enemies';
+import { EnemyBehavior, EnemyBehaviorContext } from './behaviors/EnemyBehavior';
 
 // Enemy emojis mapping
 const ENEMY_EMOJIS: Record<string, string> = {
@@ -24,6 +25,7 @@ export class Enemy extends Phaser.GameObjects.Container {
   private sprite: Phaser.GameObjects.Text;
   private healthBar: Phaser.GameObjects.Rectangle;
   private healthBarBg: Phaser.GameObjects.Rectangle;
+  private behavior: EnemyBehavior | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -74,6 +76,10 @@ export class Enemy extends Phaser.GameObjects.Container {
     });
   }
 
+  public setBehavior(behavior: EnemyBehavior): void {
+    this.behavior = behavior;
+  }
+
   public takeDamage(amount: number): void {
     if (this.isDead) return;
 
@@ -114,22 +120,50 @@ export class Enemy extends Phaser.GameObjects.Container {
     });
   }
 
-  public update(_time: number, delta: number): void {
-    if (this.isDead || this.pathIndex >= this.path.length - 1) return;
+  public update(time: number, delta: number, behaviorContext?: EnemyBehaviorContext): void {
+    if (this.isDead) return;
+
+    if (this.behavior && behaviorContext) {
+      this.behavior.update(this, behaviorContext, time, delta);
+      return;
+    }
+
+    this.moveByBehaviorDefault(delta);
+  }
+
+  public moveByBehaviorDefault(delta: number): void {
+    if (this.pathIndex >= this.path.length - 1) return;
 
     const target = this.path[this.pathIndex + 1];
-    const dx = target.x - this.x;
-    const dy = target.y - this.y;
+    this.moveToPoint(target.x, target.y, delta, () => {
+      this.pathIndex++;
+    }, 5);
+  }
+
+  public moveToPoint(
+    targetX: number,
+    targetY: number,
+    delta: number,
+    onReached?: () => void,
+    reachedThreshold: number = 5
+  ): void {
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance < 5) {
-      this.pathIndex++;
-    } else {
-      const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
-      const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
-      this.x += moveX;
-      this.y += moveY;
+    if (distance < reachedThreshold) {
+      if (onReached) {
+        onReached();
+      }
+      return;
     }
+
+    if (distance <= 0) return;
+
+    const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+    const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+    this.x += moveX;
+    this.y += moveY;
   }
 
   public reachedEnd(): boolean {

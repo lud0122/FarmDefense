@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { EnemyConfig } from '../config/enemies';
 import { Pathfinding } from '../utils/Pathfinding';
+import { EnemyBehavior, EnemyBehaviorContext } from './behaviors/EnemyBehavior';
 
 // Smart enemy emojis (more intelligent variants)
 const SMART_ENEMY_EMOJIS: Record<string, string> = {
@@ -35,6 +36,7 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
   // Pathfinding update parameters
   private pathfindingCooldown: number = 0;
   private readonly PATHFINDING_INTERVAL: number = 300; // Recalculate path frequently (0.3s) to respond to new towers
+  private behavior: EnemyBehavior | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -92,6 +94,10 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
     this.calculatePathToEnd();
   }
 
+  public setBehavior(behavior: EnemyBehavior): void {
+    this.behavior = behavior;
+  }
+
   public takeDamage(amount: number): void {
     if (this.isDead) return;
 
@@ -132,9 +138,18 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
     });
   }
 
-  public update(_time: number, delta: number): void {
+  public update(time: number, delta: number, behaviorContext?: EnemyBehaviorContext): void {
     if (this.isDead) return;
 
+    if (this.behavior && behaviorContext) {
+      this.behavior.update(this, behaviorContext, time, delta);
+      return;
+    }
+
+    this.moveByBehaviorDefault(delta);
+  }
+
+  public moveByBehaviorDefault(delta: number): void {
     // Update pathfinding cooldown and recalculate if needed
     this.pathfindingCooldown -= delta;
     if (this.pathfindingCooldown <= 0) {
@@ -143,6 +158,27 @@ export class SmartEnemy extends Phaser.GameObjects.Container {
 
     // Move along path
     this.moveAlongPath(delta);
+  }
+
+  public moveToPoint(targetX: number, targetY: number, delta: number): void {
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= 0) return;
+
+    const moveX = (dx / distance) * this.currentSpeed * (delta / 1000);
+    const moveY = (dy / distance) * this.currentSpeed * (delta / 1000);
+
+    const nextX = this.x + moveX;
+    const nextY = this.y + moveY;
+    if (!this.isPositionBlocked(nextX, nextY)) {
+      this.x = nextX;
+      this.y = nextY;
+      return;
+    }
+
+    this.trySlideMovement(moveX, moveY);
   }
 
   private calculatePathToEnd(): void {
