@@ -6,7 +6,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
-    // 当前版本使用代码绘制图形，不依赖外部贴图资源
+    // 加载必要的资源
+    // 暂时使用占位图形，后续替换为真实素材
+    this.load.image('ground', 'assets/sprites/ground.png');
+    this.load.image('tower-base', 'assets/sprites/tower-base.png');
   }
 
   create(): void {
