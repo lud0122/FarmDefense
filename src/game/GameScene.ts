@@ -86,6 +86,7 @@ export class GameScene extends Phaser.Scene {
         this.hideTowerRecycleMenu();
       }
     });
+    this.projectileManager = new ProjectileManager(this);
     this.enemyManager.setTowerProvider(() => this.towerManager.getTowers().map(tower => ({
       x: tower.x,
       y: tower.y,
