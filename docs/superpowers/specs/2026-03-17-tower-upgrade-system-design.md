@@ -27,14 +27,17 @@
    - 使用现有的升级机制
 
 2. **特殊能力升级**
-   - 每种塔楼3-4个独特能力
+   - 每种塔楼2个独特能力
    - 需要额外花费金币购买
    - 解锁新技能或增强效果
+   - **互斥规则**：每种特殊能力只能购买一次，且非互斥（可同时拥有多个特殊能力）
+   - 例如：手枪塔可同时拥有"快速装填"和"穿透子弹"
 
 3. **分支进化升级**
    - 塔楼达到3级时可选择进化方向
    - 两个分支选项，改变塔楼的攻击模式
    - 进化后塔楼变为新类型
+   - **互斥规则**：进化是一次性选择，进化后不可逆
 
 ### 3.2 每种塔楼的升级路线
 
@@ -225,18 +228,24 @@
 
 #### 波次系数
 ```typescript
-波次系数 = min(1.0 + (当前波次 - 解锁波次) × 0.05, 1.5)
+波次系数 = max(1.0, min(1.0 + (当前波次 - 解锁波次) × 0.05, 1.5))
 ```
+
+- 边界处理：波次系数最低为1.0（避免提前购买导致成本异常）
+- 上限处理：波次系数最高为1.5（避免高波次价格过高）
 
 示例：
 - 第5波购买解锁波次为5的升级：系数 = 1.0
-- 第10波购买同一升级：系数 = min(1.0 + 5 × 0.05, 1.5) = 1.25
-- 第20波购买：系数 = min(1.0 + 15 × 0.05, 1.5) = 1.5（上限）
+- 第10波购买同一升级：系数 = 1.25
+- 第20波购买：系数 = 1.5（上限）
 
 #### 难度系数
 ```typescript
-难度系数 = 1.0 + (敌人总生命值 / 基准生命值 - 1.0) × 0.5
+难度系数 = max(0.5, min(1.0 + (敌人总生命值 / max(基准生命值, 1) - 1.0) × 0.5, 2.0))
 ```
+
+- 边界处理：难度系数最低为0.5，最高为2.0
+- 除零保护：`max(基准生命值, 1)` 防止除零
 
 基准生命值：第5波敌人的总生命值
 
@@ -332,15 +341,20 @@ export class Tower {
   }
 
   private applyUpgradeEffect(effect: UpgradeEffect): void {
-    if (effect.damageMultiplier) {
-      this.config.damage = Math.floor(this.config.damage * effect.damageMultiplier);
-    }
-    if (effect.rangeMultiplier) {
-      this.config.range = Math.floor(this.config.range * effect.rangeMultiplier);
-    }
-    if (effect.fireRateMultiplier) {
-      this.config.fireRate = Math.floor(this.config.fireRate * effect.fireRateMultiplier);
-    }
+    // 遵守不可变性原则，创建新的配置对象
+    const newConfig: TowerConfig = {
+      ...this.config,
+      damage: effect.damageMultiplier
+        ? Math.floor(this.config.damage * effect.damageMultiplier)
+        : this.config.damage,
+      range: effect.rangeMultiplier
+        ? Math.floor(this.config.range * effect.rangeMultiplier)
+        : this.config.range,
+      fireRate: effect.fireRateMultiplier
+        ? Math.floor(this.config.fireRate * effect.fireRateMultiplier)
+        : this.config.fireRate,
+    };
+    this.config = newConfig;
     // 处理特殊能力...
   }
 }
@@ -356,27 +370,110 @@ export class Tower {
 export class UpgradeManager {
   private scene: Phaser.Scene;
   private upgradeConfigs: TowerUpgradeConfig;
+  private baseDifficultyHealth: number; // 基准敌人总生命值（第5波）
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.upgradeConfigs = TOWER_UPGRADES;
+    this.baseDifficultyHealth = 1000; // 根据游戏实际数据设置
   }
 
   public getAvailableUpgrades(tower: Tower, currentWave: number): TowerUpgrade[] {
     // 返回可购买的升级列表
+    // 过滤已购买的升级
+    // 过滤未解锁波次的升级
+    // 过滤等级不足的升级
   }
 
-  public calculateUpgradeCost(upgrade: TowerUpgrade, tower: Tower, gameState: GameState): number {
-    // 计算动态价格
+  public calculateUpgradeCost(upgrade: TowerUpgrade, tower: Tower, currentWave: number, totalEnemyHealth: number): number {
+    // 获取塔楼当前等级
+    const towerLevel = tower.getLevel();
+
+    // 计算波次系数
+    const waveBonus = Math.max(0, currentWave - upgrade.unlocksAtWave) * 0.05;
+    const waveMultiplier = Math.max(1.0, Math.min(1.0 + waveBonus, 1.5));
+
+    // 计算难度系数
+    const safeBaseHealth = Math.max(this.baseDifficultyHealth, 1);
+    const difficultyBonus = (totalEnemyHealth / safeBaseHealth - 1.0) * 0.5;
+    const difficultyMultiplier = Math.max(0.5, Math.min(1.0 + difficultyBonus, 2.0));
+
+    // 获取塔楼等级系数
+    const levelMultipliers = { 1: 1.0, 2: 1.3, 3: 1.6 };
+    const levelMultiplier = levelMultipliers[towerLevel] || 1.0;
+
+    // 计算最终价格
+    const finalCost = Math.floor(upgrade.baseCost * waveMultiplier * difficultyMultiplier * levelMultiplier);
+
+    return finalCost;
   }
 
-  public purchaseUpgrade(tower: Tower, upgradeId: string): boolean {
-    // 购买升级逻辑
+  public purchaseUpgrade(tower: Tower, upgradeId: string, currentMoney: number, cost: number): boolean {
+    // 检查金币是否足够
+    if (currentMoney < cost) return false;
+
+    // 获取升级配置
+    const upgrade = this.getUpgradeById(upgradeId);
+    if (!upgrade) return false;
+
+    // 应用到塔楼
+    tower.purchaseUpgrade(upgrade);
+
+    return true;
+  }
+
+  private getUpgradeById(upgradeId: string): TowerUpgrade | null {
+    // 从配置中查找升级
+    return null;
   }
 }
 ```
 
-### 7.2 TowerUpgradeMenu
+### 7.2 TowerManager 集成
+
+更新 `src/systems/TowerManager.ts`：
+
+```typescript
+export class TowerManager {
+  // 现有属性...
+  private upgradeManager: UpgradeManager;
+
+  constructor(scene: Phaser.Scene, onTowerRemoved?: (tower: Tower) => void) {
+    // 现有初始化...
+    this.upgradeManager = new UpgradeManager(scene);
+  }
+
+  public getUpgradeManager(): UpgradeManager {
+    return this.upgradeManager;
+  }
+
+  // 在升级塔楼时，需要同步更新 TowerManager 中的引用
+  public upgradeTower(tower: Tower, upgrade: TowerUpgrade): boolean {
+    // 检查金币
+    const gameScene = this.scene as any;
+    if (gameScene.economySystem.getMoney() < upgrade.baseCost) return false;
+
+    // 执行升级
+    const success = this.upgradeManager.purchaseUpgrade(
+      tower,
+      upgrade.id,
+      gameScene.economySystem.getMoney(),
+      upgrade.baseCost
+    );
+
+    if (success) {
+      // 扣除金币
+      gameScene.economySystem.spendMoney(upgrade.baseCost);
+      // 播放升级动画
+      // ...
+    }
+
+    return success;
+  }
+}
+```
+
+### 7.3 TowerUpgradeMenu
 
 新增文件：`src/ui/TowerUpgradeMenu.ts`
 
@@ -403,7 +500,7 @@ export class TowerUpgradeMenu extends Phaser.GameObjects.Container {
 }
 ```
 
-### 7.3 GameScene 集成
+### 7.4 GameScene 集成
 
 更新 `GameScene.ts`：
 
@@ -412,7 +509,11 @@ export class GameScene extends Phaser.Scene {
   private upgradeManager: UpgradeManager;
   private upgradeMenu: TowerUpgradeMenu | null = null;
 
+  // 显示升级菜单（点击塔楼时调用）
   private showTowerUpgradeMenu(tower: Tower): void {
+    // 先隐藏现有的回收菜单
+    this.hideTowerRecycleMenu();
+    // 创建升级菜单
     const upgrades = this.upgradeManager.getAvailableUpgrades(tower, this.currentWave);
     this.upgradeMenu = new TowerUpgradeMenu(this, tower, upgrades);
   }
@@ -422,6 +523,18 @@ export class GameScene extends Phaser.Scene {
       this.upgradeMenu.destroy();
       this.upgradeMenu = null;
     }
+  }
+
+  // 显示回收菜单（长按塔楼时调用，保持现有逻辑）
+  private showTowerRecycleMenu(tower: Tower): void {
+    // 如果升级菜单已打开，先隐藏
+    this.hideUpgradeMenu();
+    // 显示回收菜单（继承现有实现）
+    // ...
+  }
+
+  private hideTowerRecycleMenu(): void {
+    // 继承现有实现
   }
 }
 ```
@@ -460,8 +573,11 @@ export class GameScene extends Phaser.Scene {
 ### 9.2 长按交互
 
 - 复用现有长按逻辑（500ms）
-- 长按后显示升级菜单（而非回收菜单）
-- 回收菜单移至升级菜单的最后一个选项
+- **交互逻辑**：
+  - 点击塔楼：显示升级菜单
+  - 长按塔楼（500ms）：显示回收菜单（保持现有逻辑）
+  - 升级菜单内置"回收塔楼"选项，玩家也可在升级菜单中选择回收
+- **冲突解决**：升级菜单优先于回收菜单，玩家可以在升级菜单中找到回收选项
 
 ### 9.3 UI缩放
 
