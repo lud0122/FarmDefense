@@ -7,15 +7,115 @@ import { IceTower } from '../entities/towers/IceTower';
 import { ElectricTower } from '../entities/towers/ElectricTower';
 import { SentinelTower } from '../entities/towers/SentinelTower';
 import { TOWERS } from '../config/towers';
+import { UpgradeManager } from './UpgradeManager';
+import { TowerUpgrade } from '../config/towerUpgrades';
 
 export class TowerManager {
   private towers: Tower[] = [];
   private scene: Phaser.Scene;
   private onTowerRemoved: ((tower: Tower) => void) | null;
+  private upgradeManager: UpgradeManager;
+  private enemyManager: any = null; // 用于获取敌人信息计算动态价格
 
   constructor(scene: Phaser.Scene, onTowerRemoved?: (tower: Tower) => void) {
     this.scene = scene;
     this.onTowerRemoved = onTowerRemoved ?? null;
+    this.upgradeManager = new UpgradeManager(scene);
+  }
+
+  /**
+   * 设置敌人管理器(用于动态定价)
+   */
+  public setEnemyManager(enemyManager: any): void {
+    this.enemyManager = enemyManager;
+  }
+
+  /**
+   * 获取升级管理器
+   */
+  public getUpgradeManager(): UpgradeManager {
+    return this.upgradeManager;
+  }
+
+  /**
+   * 购买塔楼升级
+   */
+  public purchaseTowerUpgrade(tower: Tower, upgradeId: string): boolean {
+    const upgrade = this.upgradeManager.getUpgradeById(upgradeId);
+    if (!upgrade) return false;
+
+    // 计算价格(需要游戏状态)
+    const currentWave = this.getCurrentWave();
+    const totalEnemyHealth = this.getTotalEnemyHealth();
+    const cost = this.upgradeManager.calculateUpgradeCost(
+      upgrade,
+      tower.getLevel(),
+      currentWave,
+      totalEnemyHealth
+    );
+
+    // 检查金币(从 scene 获取 economySystem)
+    const economySystem = (this.scene as any).economySystem;
+    if (!economySystem || economySystem.getMoney() < cost) {
+      return false;
+    }
+
+    // 执行购买
+    if (this.upgradeManager.canPurchaseUpgrade(upgrade, economySystem.getMoney(), cost)) {
+      // 扣除金币
+      economySystem.spendMoney(cost);
+
+      // 应用升级
+      tower.purchaseUpgrade(upgrade);
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 获取塔楼可用升级列表
+   */
+  public getAvailableUpgrades(tower: Tower): { upgrade: TowerUpgrade; cost: number }[] {
+    const upgrades = this.upgradeManager.getAvailableUpgrades(
+      tower.config.key,
+      tower.getLevel(),
+      this.getCurrentWave(),
+      new Set(tower.getPurchasedUpgrades())
+    );
+
+    const totalEnemyHealth = this.getTotalEnemyHealth();
+    const currentWave = this.getCurrentWave();
+
+    return upgrades.map(upgrade => ({
+      upgrade,
+      cost: this.upgradeManager.calculateUpgradeCost(
+        upgrade,
+        tower.getLevel(),
+        currentWave,
+        totalEnemyHealth
+      ),
+    }));
+  }
+
+  /**
+   * 获取当前波次
+   */
+  private getCurrentWave(): number {
+    return (this.scene as any).currentWave || 1;
+  }
+
+  /**
+   * 计算当前敌人总生命值
+   */
+  private getTotalEnemyHealth(): number {
+    if (!this.enemyManager) return 1000;
+
+    const enemies = this.enemyManager.getEnemies ? this.enemyManager.getEnemies() : [];
+    return enemies.reduce((sum: number, enemy: any) => {
+      return sum + (enemy.getCurrentHealth?.() || 0);
+    }, 1000);
   }
 
   public placeTower(x: number, y: number, towerKey: string): Tower | null {
