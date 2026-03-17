@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TowerConfig } from '../config/towers';
 import { Enemy } from './Enemy';
+import { TowerUpgrade, UpgradeEffect, SpecialAbility } from '../config/towerUpgrades';
 
 // Tower emojis mapping
 const TOWER_EMOJIS: Record<string, string> = {
@@ -26,6 +27,10 @@ export class Tower extends Phaser.GameObjects.Container {
   private currentHealth: number;
   private destroyed: boolean = false;
   private onDestroyed: ((tower: Tower) => void) | null = null;
+  // 升级系统
+  private upgrades: Set<string> = new Set(); // 已购买的升级ID
+  private evolution: string | null = null; // 进化后的类型
+  private specialAbilities: SpecialAbility[] = []; // 已解锁的特殊能力
 
   constructor(scene: Phaser.Scene, x: number, y: number, config: TowerConfig) {
     super(scene, x, y);
@@ -286,6 +291,109 @@ export class Tower extends Phaser.GameObjects.Container {
 
   public getLevel(): number {
     return this.level;
+  }
+
+  /**
+   * 检查是否已购买指定升级
+   */
+  public hasUpgrade(upgradeId: string): boolean {
+    return this.upgrades.has(upgradeId);
+  }
+
+  /**
+   * 获取所有已购买的升级
+   */
+  public getPurchasedUpgrades(): string[] {
+    return Array.from(this.upgrades);
+  }
+
+  /**
+   * 购买并应用升级
+   * 遵循不可变性原则
+   */
+  public purchaseUpgrade(upgrade: TowerUpgrade): void {
+    if (this.upgrades.has(upgrade.id)) return;
+
+    this.upgrades.add(upgrade.id);
+    this.applyUpgradeEffect(upgrade.effect);
+
+    // 如果是进化,记录进化目标
+    if (upgrade.type === 'evolution' && upgrade.evolutionTarget) {
+      this.evolution = upgrade.evolutionTarget;
+    }
+
+    // 播放升级特效
+    this.playUpgradeEffect();
+  }
+
+  /**
+   * 应用升级效果(不可变)
+   */
+  private applyUpgradeEffect(effect: UpgradeEffect): void {
+    // 创建新的配置对象,遵循不可变性原则
+    const newConfig = { ...this.config };
+
+    if (effect.damageMultiplier) {
+      newConfig.damage = Math.floor(this.config.damage * effect.damageMultiplier);
+    }
+    if (effect.rangeMultiplier) {
+      newConfig.range = Math.floor(this.config.range * effect.rangeMultiplier);
+    }
+    if (effect.fireRateMultiplier) {
+      newConfig.fireRate = Math.floor(this.config.fireRate * effect.fireRateMultiplier);
+    }
+
+    // 处理特殊能力
+    if (effect.specialAbility) {
+      this.specialAbilities.push(effect.specialAbility);
+    }
+
+    // 更新配置
+    this.config = newConfig;
+  }
+
+  /**
+   * 获取特殊能力列表
+   */
+  public getSpecialAbilities(): SpecialAbility[] {
+    return [...this.specialAbilities];
+  }
+
+  /**
+   * 检查是否有指定类型的特殊能力
+   */
+  public hasSpecialAbility(type: SpecialAbility['type']): boolean {
+    return this.specialAbilities.some(ability => ability.type === type);
+  }
+
+  /**
+   * 获取进化后的类型
+   */
+  public getEvolution(): string | null {
+    return this.evolution;
+  }
+
+  /**
+   * 播放升级特效
+   */
+  public playUpgradeEffect(): void {
+    // 放大缩小动画
+    this.scene.tweens.add({
+      targets: this,
+      scale: 1.2,
+      duration: 200,
+      yoyo: true,
+    });
+
+    // 发光效果
+    if (this.base) {
+      this.scene.tweens.add({
+        targets: this.base,
+        fillColor: 0xFFD700,
+        duration: 200,
+        yoyo: true,
+      });
+    }
   }
 
   public destroy(fromScene?: boolean): void {

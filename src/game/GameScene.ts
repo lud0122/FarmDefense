@@ -15,6 +15,9 @@ import { PlayerHelicopter } from '../entities/PlayerHelicopter';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { MobileToolbar } from '../ui/MobileToolbar';
 import { MobileTowerPanel } from '../ui/MobileTowerPanel';
+import { TowerUpgradeMenu } from '../ui/TowerUpgradeMenu';
+import { Tower } from '../entities/Tower';
+import { TowerUpgrade } from '../config/towerUpgrades';
 import { isMobile } from '../utils/MobileDetect';
 
 export class GameScene extends Phaser.Scene {
@@ -27,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private playerHelicopter!: PlayerHelicopter;
   private lives: number = GAME_CONFIG.MAX_LIVES;
   private livesText!: Phaser.GameObjects.Text;
+  private upgradeMenu: TowerUpgradeMenu | null = null;
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
   private previewRangeCircle: Phaser.GameObjects.Graphics | null = null;
@@ -596,6 +600,125 @@ export class GameScene extends Phaser.Scene {
       tower.showSelected(false);
     }
     (this as any).selectedTower = null;
+  }
+
+  /**
+   * 显示塔楼升级菜单
+   */
+  public showTowerUpgradeMenu(tower: Tower): void {
+    // 关闭现有菜单
+    this.hideUpgradeMenu();
+    this.hideTowerRecycleMenu();
+
+    (this as any).selectedTower = tower;
+    tower.showSelected(true);
+
+    // 获取可用升级
+    const availableUpgrades = this.towerManager.getAvailableUpgrades(tower);
+
+    // 构建成本映射
+    const costs = new Map<string, number>();
+    availableUpgrades.forEach(({ upgrade, cost }) => {
+      costs.set(upgrade.id, cost);
+    });
+
+    const currentMoney = this.economySystem.getMoney();
+
+    // 创建升级菜单
+    this.upgradeMenu = new TowerUpgradeMenu(
+      this,
+      tower,
+      availableUpgrades.map(u => u.upgrade),
+      costs,
+      currentMoney
+    );
+
+    // 绑定事件
+    this.upgradeMenu.on('purchase', (upgrade: TowerUpgrade, cost: number) => {
+      this.handleUpgradePurchase(tower, upgrade, cost);
+    });
+
+    this.upgradeMenu.on('close', () => {
+      this.hideUpgradeMenu();
+    });
+
+    this.upgradeMenu.on('recycle', (towerToRecycle: Tower) => {
+      this.handleTowerRecycle(towerToRecycle);
+    });
+
+    // 播放打开音效
+    this.audioSystem.playClickSound();
+  }
+
+  /**
+   * 隐藏升级菜单
+   */
+  private hideUpgradeMenu(): void {
+    if (this.upgradeMenu) {
+      this.upgradeMenu.destroy();
+      this.upgradeMenu = null;
+    }
+
+    // Deselect tower
+    const tower = (this as any).selectedTower;
+    if (tower && tower.active && tower.showSelected) {
+      tower.showSelected(false);
+    }
+    (this as any).selectedTower = null;
+  }
+
+  /**
+   * 处理升级购买
+   */
+  private handleUpgradePurchase(tower: Tower, upgrade: TowerUpgrade, _cost: number): void {
+    const success = this.towerManager.purchaseTowerUpgrade(tower, upgrade.id);
+
+    if (success) {
+      // 播放购买音效
+      this.audioSystem.playUpgradeSound();
+
+      // 刷新菜单
+      this.showTowerUpgradeMenu(tower);
+
+      // 显示购买提示
+      this.showFloatingText('升级成功!', tower.x, tower.y - 50, '#00FF00');
+    } else {
+      // 显示失败提示
+      this.showFloatingText('金币不足!', tower.x, tower.y - 50, '#FF4444');
+    }
+  }
+
+  /**
+   * 处理塔楼回收
+   */
+  private handleTowerRecycle(tower: Tower): void {
+    const value = tower.getRecycleValue();
+    // 调用现有的回收逻辑
+    this.recycleTower(tower, value);
+    this.hideUpgradeMenu();
+  }
+
+  /**
+   * 显示浮动文字
+   */
+  private showFloatingText(text: string, x: number, y: number, color: string): void {
+    const floatingText = this.add.text(x, y, text, {
+      fontSize: '16px',
+      color: color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(200);
+
+    this.tweens.add({
+      targets: floatingText,
+      y: y - 30,
+      alpha: 0,
+      duration: 1000,
+      onComplete: () => {
+        floatingText.destroy();
+      },
+    });
   }
 
   private recycleTower(tower: any, value: number): void {
