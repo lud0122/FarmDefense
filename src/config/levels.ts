@@ -1,3 +1,8 @@
+export interface LevelBehaviorMixConfig {
+  rushRatio: number;
+  towerBreakerRatio: number;
+}
+
 export interface LevelConfig {
   number: number;
   name: string;
@@ -5,6 +10,7 @@ export interface LevelConfig {
   maxLives: number;
   waves: WaveConfig[][];
   isSmartLevel?: boolean; // New field for Level 5
+  behaviorMix?: LevelBehaviorMixConfig;
 }
 
 export interface WaveConfig {
@@ -125,6 +131,24 @@ export const LEVELS: LevelConfig[] = [
         { enemyKey: 'smartEagle', count: 12, interval: 650 },
         { enemyKey: 'smartBear', count: 8, interval: 1300 }
       ]
+    ]
+  },
+  // 新增第6关：动物反击
+  {
+    number: 6,
+    name: '动物反击',
+    startingMoney: 2400,
+    maxLives: 35,
+    behaviorMix: {
+      rushRatio: 0.3,
+      towerBreakerRatio: 0.7
+    },
+    waves: [
+      [{ enemyKey: 'rabbit', count: 24, interval: 320 }, { enemyKey: 'boar', count: 8, interval: 900 }],
+      [{ enemyKey: 'fox', count: 18, interval: 420 }, { enemyKey: 'boar', count: 10, interval: 850 }],
+      [{ enemyKey: 'rabbit', count: 30, interval: 240 }, { enemyKey: 'fox', count: 16, interval: 450 }, { enemyKey: 'eagle', count: 10, interval: 700 }],
+      [{ enemyKey: 'boar', count: 18, interval: 700 }, { enemyKey: 'bear', count: 6, interval: 1500 }],
+      [{ enemyKey: 'rabbit', count: 40, interval: 200 }, { enemyKey: 'boar', count: 20, interval: 600 }, { enemyKey: 'fox', count: 22, interval: 350 }, { enemyKey: 'eagle', count: 14, interval: 550 }, { enemyKey: 'bear', count: 8, interval: 1300 }]
     ]
   }
 ];

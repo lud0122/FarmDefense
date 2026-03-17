@@ -11,9 +11,11 @@ import { TOWERS } from '../config/towers';
 export class TowerManager {
   private towers: Tower[] = [];
   private scene: Phaser.Scene;
+  private onTowerRemoved: ((tower: Tower) => void) | null;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, onTowerRemoved?: (tower: Tower) => void) {
     this.scene = scene;
+    this.onTowerRemoved = onTowerRemoved ?? null;
   }
 
   public placeTower(x: number, y: number, towerKey: string): Tower | null {
@@ -45,6 +47,10 @@ export class TowerManager {
         tower = new PistolTower(this.scene, x, y, config);
     }
 
+    tower.setOnDestroyed((destroyedTower) => {
+      this.removeTower(destroyedTower);
+    });
+
     this.towers.push(tower);
     return tower;
   }
@@ -54,7 +60,7 @@ export class TowerManager {
 
     // 更新所有塔楼
     for (const tower of this.towers) {
-      if (tower.active) {
+      if (tower.active && !tower.isDestroyed()) {
         const projectile = tower.update(time, delta, enemies);
         if (projectile) {
           newProjectiles.push(projectile);
@@ -66,14 +72,17 @@ export class TowerManager {
   }
 
   public getTowers(): Tower[] {
-    return this.towers.filter(t => t.active);
+    return this.towers.filter(t => t.active && !t.isDestroyed());
   }
 
   public removeTower(tower: Tower): void {
     const index = this.towers.indexOf(tower);
     if (index > -1) {
-      tower.destroy();
       this.towers.splice(index, 1);
+      if (this.onTowerRemoved) {
+        this.onTowerRemoved(tower);
+      }
+      tower.destroy();
     }
   }
 

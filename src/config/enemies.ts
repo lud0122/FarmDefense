@@ -7,6 +7,9 @@ export interface EnemyConfig {
   size: number;
   color: number;
   isSmart?: boolean; // New field for Level 5 smart enemies
+  attackDamage?: number; // 每次命中伤害
+  attackCooldown?: number; // 毫秒
+  attackRange?: number; // 像素
 }
 
 export const ENEMIES: Record<string, EnemyConfig> = {
@@ -17,7 +20,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     speed: 150,
     reward: 10,
     size: 16,
-    color: 0xD2B48C
+    color: 0xD2B48C,
+    attackDamage: 5,
+    attackCooldown: 1200,
+    attackRange: 20
   },
   boar: {
     key: 'boar',
@@ -26,7 +32,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     speed: 80,
     reward: 25,
     size: 24,
-    color: 0x8B4513
+    color: 0x8B4513,
+    attackDamage: 12,
+    attackCooldown: 900,
+    attackRange: 24
   },
   fox: {
     key: 'fox',
@@ -35,7 +44,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     speed: 120,
     reward: 15,
     size: 20,
-    color: 0xFF6347
+    color: 0xFF6347,
+    attackDamage: 8,
+    attackCooldown: 700,
+    attackRange: 22
   },
   eagle: {
     key: 'eagle',
@@ -44,7 +56,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     speed: 140,
     reward: 20,
     size: 18,
-    color: 0x808080
+    color: 0x808080,
+    attackDamage: 7,
+    attackCooldown: 800,
+    attackRange: 20
   },
   bear: {
     key: 'bear',
@@ -53,7 +68,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     speed: 50,
     reward: 100,
     size: 32,
-    color: 0x654321
+    color: 0x654321,
+    attackDamage: 20,
+    attackCooldown: 1300,
+    attackRange: 28
   },
   // Level 5 smart enemies
   smartRabbit: {
@@ -64,7 +82,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     reward: 15,
     size: 16,
     color: 0xD2B48C,
-    isSmart: true
+    isSmart: true,
+    attackDamage: 6,
+    attackCooldown: 1100,
+    attackRange: 20
   },
   smartBoar: {
     key: 'smartBoar',
@@ -74,7 +95,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     reward: 40,
     size: 24,
     color: 0x8B4513,
-    isSmart: true
+    isSmart: true,
+    attackDamage: 14,
+    attackCooldown: 900,
+    attackRange: 24
   },
   smartFox: {
     key: 'smartFox',
@@ -84,7 +108,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     reward: 25,
     size: 20,
     color: 0xFF6347,
-    isSmart: true
+    isSmart: true,
+    attackDamage: 10,
+    attackCooldown: 700,
+    attackRange: 22
   },
   smartEagle: {
     key: 'smartEagle',
@@ -94,7 +121,10 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     reward: 30,
     size: 18,
     color: 0x808080,
-    isSmart: true
+    isSmart: true,
+    attackDamage: 9,
+    attackCooldown: 750,
+    attackRange: 20
   },
   smartBear: {
     key: 'smartBear',
@@ -104,6 +134,9 @@ export const ENEMIES: Record<string, EnemyConfig> = {
     reward: 150,
     size: 32,
     color: 0x654321,
-    isSmart: true
+    isSmart: true,
+    attackDamage: 24,
+    attackCooldown: 1300,
+    attackRange: 28
   }
 };
