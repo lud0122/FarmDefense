@@ -814,6 +814,19 @@ export class GameScene extends Phaser.Scene {
 					return; // 点击了移动端工具栏，不处理
 				}
 
+        // 检查虚拟摇杆区域（左下角，位置 80, 480，半径约 80）
+        if (this.joystick) {
+          const joystickPos = this.joystick.getPosition();
+          const joystickRadius = 80; // 摇杆检测半径（稍大于实际半径，确保完全覆盖）
+          const distanceToJoystick = Phaser.Math.Distance.Between(
+            pointer.x, pointer.y,
+            joystickPos.x, joystickPos.y
+          );
+          if (distanceToJoystick < joystickRadius) {
+            return; // 点击了虚拟摇杆区域，不处理
+          }
+        }
+
 				// 检查移动端塔选择面板（底部，约 y: 500-600）
 				const clickedMobilePanel = pointer.y > 500;
 				if (clickedMobilePanel) {
