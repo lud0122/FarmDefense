@@ -655,6 +655,10 @@ export class GameScene extends Phaser.Scene {
       this.handleTowerRecycle(towerToRecycle);
     });
 
+    this.upgradeMenu.on('repair', (towerToRepair: Tower, cost: number) => {
+      this.handleTowerRepair(towerToRepair, cost);
+    });
+
     // 播放打开音效
     this.audioSystem.playClickSound();
   }
@@ -705,6 +709,32 @@ export class GameScene extends Phaser.Scene {
     // 调用现有的回收逻辑
     this.recycleTower(tower, value);
     this.hideUpgradeMenu();
+  }
+
+  /**
+   * 处理塔楼修复
+   */
+  private handleTowerRepair(tower: Tower, cost: number): void {
+    const currentMoney = this.economySystem.getMoney();
+
+    if (currentMoney < cost) {
+      // 显示金币不足提示
+      this.showFloatingText('金币不足!', tower.x, tower.y - 50, '#FF4444');
+      return;
+    }
+
+    // 扣除金币并执行修复
+    this.economySystem.spendMoney(cost);
+    tower.repair();
+
+    // 显示修复成功提示
+    const maxHealth = tower.getMaxHealth();
+    const currentHealth = tower.getCurrentHealth();
+    const healedAmount = maxHealth - (maxHealth - (maxHealth - currentHealth));
+    this.showFloatingText(`修复成功! +${healedAmount}HP`, tower.x, tower.y - 50, '#00FF00');
+
+    // 刷新菜单以更新血量显示和修复按钮
+    this.showTowerUpgradeMenu(tower);
   }
 
   /**

@@ -10,7 +10,10 @@ export class TowerUpgradeMenu extends Phaser.GameObjects.Container {
   private backgroundCircle: Phaser.GameObjects.Graphics | null = null;
   private titleText: Phaser.GameObjects.Text | null = null;
   public closeButton: Phaser.GameObjects.Container | null = null;
+  public repairButton: Phaser.GameObjects.Container | null = null;
   public recycleButton: Phaser.GameObjects.Container | null = null;
+  public repairCostText: Phaser.GameObjects.Text | null = null;
+  public repairButtonBg: Phaser.GameObjects.Rectangle | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -25,8 +28,10 @@ export class TowerUpgradeMenu extends Phaser.GameObjects.Container {
 
     this.createBackground();
     this.createTitle();
+    this.createHealthInfo();
     this.createUpgradeOptions(upgrades, costs, currentMoney);
     this.createCloseButton();
+    this.createRepairButton();
     this.createRecycleButton();
 
     scene.add.existing(this);
@@ -52,6 +57,24 @@ export class TowerUpgradeMenu extends Phaser.GameObjects.Container {
       fontStyle: 'bold',
     }).setOrigin(0.5);
     this.add(this.titleText);
+  }
+
+  /**
+   * 创建血量信息
+   */
+  private createHealthInfo(): void {
+    const currentHealth = this.tower.getCurrentHealth();
+    const maxHealth = this.tower.getMaxHealth();
+
+    if (currentHealth >= maxHealth) return; // 满血时不显示
+
+    const healthColor = currentHealth / maxHealth > 0.5 ? '#00FF00' : currentHealth / maxHealth > 0.25 ? '#FFFF00' : '#FF0000';
+
+    const healthText = this.scene.add.text(0, -90, `HP: ${currentHealth}/${maxHealth}`, {
+      fontSize: '12px',
+      color: healthColor,
+    }).setOrigin(0.5);
+    this.add(healthText);
   }
 
   private getTowerDisplayName(key: string): string {
@@ -130,6 +153,43 @@ export class TowerUpgradeMenu extends Phaser.GameObjects.Container {
     });
 
     this.closeButton = container;
+    this.add(container);
+  }
+
+  private createRepairButton(): void {
+    const maxHealth = this.tower.getMaxHealth();
+    const currentHealth = this.tower.getCurrentHealth();
+
+    // 满血时不显示修复按钮
+    if (currentHealth >= maxHealth) return;
+
+    const repairCost = this.tower.getRepairCost();
+    const container = this.scene.add.container(0, 80);
+
+    const bg = this.scene.add.rectangle(0, 0, 100, 28, 0x006400);
+    bg.setInteractive({ useHandCursor: true });
+    container.add(bg);
+    this.repairButtonBg = bg;
+
+    const missingHealth = maxHealth - currentHealth;
+    const text = this.scene.add.text(0, 0, `修复 +${missingHealth}HP`, {
+      fontSize: '12px',
+      color: '#00FF00',
+    }).setOrigin(0.5);
+    container.add(text);
+
+    const costText = this.scene.add.text(0, -22, `💰${repairCost}`, {
+      fontSize: '10px',
+      color: '#FFD700',
+    }).setOrigin(0.5);
+    container.add(costText);
+    this.repairCostText = costText;
+
+    bg.on('pointerdown', () => {
+      this.emit('repair', this.tower, repairCost);
+    });
+
+    this.repairButton = container;
     this.add(container);
   }
 
