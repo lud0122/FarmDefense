@@ -204,6 +204,56 @@ export class Tower extends Phaser.GameObjects.Container {
   }
 
   /**
+   * 修复塔，恢复指定血量
+   * @param amount 恢复的血量，默认修复到满血
+   */
+  public repair(amount?: number): void {
+    if (this.destroyed) return;
+
+    const maxHeal = this.maxHealth - this.currentHealth;
+    const healAmount = amount ?? maxHeal;
+
+    this.currentHealth = Math.min(
+      this.maxHealth,
+      this.currentHealth + healAmount
+    );
+
+    // 更新血条
+    this.updateHealthBar();
+
+    // 播放修复特效
+    this.playRepairEffect();
+  }
+
+  /**
+   * 计算修复到满血所需价格
+   * 公式: originalCost × 0.5 × (缺失血量 / 最大血量)
+   */
+  public getRepairCost(): number {
+    const missingHealth = this.maxHealth - this.currentHealth;
+    const repairRatio = missingHealth / this.maxHealth;
+    return Math.floor(this.originalCost * 0.5 * repairRatio);
+  }
+
+  /**
+   * 播放修复特效
+   */
+  private playRepairEffect(): void {
+    // 发光效果
+    if (this.base) {
+      this.scene.tweens.add({
+        targets: this.base,
+        fillColor: { from: this.config.color, to: 0x00FF00 },
+        duration: 300,
+        yoyo: true
+      });
+    }
+
+    // 粒子效果
+    ParticleFactory.createRepairParticles(this.scene, this.x, this.y);
+  }
+
+  /**
    * 开始长按计时
    */
   private startLongPress(): void {
