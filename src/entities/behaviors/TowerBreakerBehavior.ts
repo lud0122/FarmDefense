@@ -1,4 +1,6 @@
+import Phaser from 'phaser';
 import { EnemyBehavior, EnemyBehaviorContext, BehaviorControlledEnemy } from './EnemyBehavior';
+import { ParticleFactory } from '../../utils/ParticleFactory.js';
 
 const getDistance = (fromX: number, fromY: number, toX: number, toY: number): number => {
   const dx = toX - fromX;
@@ -48,6 +50,17 @@ export class TowerBreakerBehavior implements EnemyBehavior {
     }
 
     this.lastAttackTime = time;
+
+    // 发射攻击粒子 - 使用类型断言获取 scene
+    const enemyWithScene = enemy as unknown as { scene: Phaser.Scene };
+    ParticleFactory.createAttackParticles(
+      enemyWithScene.scene,
+      enemy.x,
+      enemy.y,
+      this.targetTower.x,
+      this.targetTower.y
+    );
+
     this.targetTower.takeDamage(this.attackDamage);
   }
 
