@@ -388,7 +388,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     // 波次信息
-    this.waveText = this.add.text(400, 20, `Wave ${this.currentWave + 1}`, {
+    this.waveText = this.add.text(400, 20, `Level ${this.currentLevel + 1} - Wave ${this.currentWave + 1}`, {
       fontSize: '24px',
       color: '#FFFFFF'
     }).setOrigin(0.5, 0);
@@ -915,7 +915,7 @@ export class GameScene extends Phaser.Scene {
     this.waveInProgress = true;
     this.currentWave++;
     // 更新波次显示
-    this.waveText.setText(`Wave ${this.currentWave}`);
+    this.waveText.setText(`Level ${this.currentLevel + 1} - Wave ${this.currentWave}`);
 
 
     // Enable smart enemy mode for Level 5
