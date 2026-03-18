@@ -35,6 +35,8 @@ export class GameScene extends Phaser.Scene {
   private waveInProgress: boolean = false;
   private currentWave: number = 0;
   private previewRangeCircle: Phaser.GameObjects.Graphics | null = null;
+  private lastPreviewUpdateTime: number = 0;
+  private readonly PREVIEW_UPDATE_INTERVAL: number = 16; // 约60fps
 
   // Level 5 smart enemy mode
   private pathfinding!: Pathfinding | null;
@@ -759,21 +761,75 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private handlePointerMove(pointer: Phaser.Input.Pointer): void {
-    // 如果有选中的塔类型，显示攻击范围预览
-    if (this.selectedTowerKey) {
-      // 检查鼠标是否在游戏区域（不在塔选择面板区域）
-      const isInTowerPanel = pointer.y > 520;
+  /**
+   * 判断触摸点是否在游戏可交互区域
+   * 排除移动端UI元素（塔选择面板、工具栏、虚拟摇杆）
+   */
+  private isTouchInGameArea(pointer: Phaser.Input.Pointer): boolean {
+    // 排除底部塔选择面板区域
+    if (this.mobileTowerPanel) {
+      const panelY = this.mobileTowerPanel.y;
+      const panelHeight = 100; // MobileTowerPanel.panelHeight
+      if (pointer.y > panelY - panelHeight / 2) return false;
+    }
 
-      if (!isInTowerPanel) {
-        this.updatePreviewRange(pointer.x, pointer.y);
-              } else {
+    // 排除工具栏区域
+    if (this._mobileToolbar) {
+      const toolbarY = this._mobileToolbar.y;
+      const toolbarHeight = 70;
+      const toolbarWidth = 150;
+      // 以屏幕中心(400)为基准计算工具栏范围
+      if (pointer.y >= toolbarY - toolbarHeight / 2 &&
+          pointer.y < toolbarY + toolbarHeight / 2 &&
+          pointer.x >= 400 - toolbarWidth / 2 &&
+          pointer.x <= 400 + toolbarWidth / 2) {
+        return false;
+      }
+    }
+
+    // 排除虚拟摇杆区域
+    if (this.joystick) {
+      const joystickPos = this.joystick.getPosition();
+      const joystickRadius = 80; // baseRadius(60) + 扩展区域(20)
+      const distance = Phaser.Math.Distance.Between(
+        pointer.x, pointer.y,
+        joystickPos.x, joystickPos.y
+      );
+      if (distance < joystickRadius) return false;
+    }
+
+    return true;
+  }
+
+  private handlePointerMove(pointer: Phaser.Input.Pointer): void {
+    if (this.selectedTowerKey) {
+      // 先判断是否在游戏区域（不节流）
+      const isInGameArea = this.isMobileDevice
+        ? this.isTouchInGameArea(pointer)
+        : pointer.y <= 520;
+
+      if (!isInGameArea) {
         this.clearPreviewRange();
-              }
+        this.lastPreviewUpdateTime = 0; // 离开区域时重置
+        return;
+      }
+
+      // 检查是否是首次进入（lastPreviewUpdateTime为0）
+      const now = Date.now();
+      const isFirstEnter = this.lastPreviewUpdateTime === 0;
+      const shouldUpdate = isFirstEnter ||
+        (now - this.lastPreviewUpdateTime >= this.PREVIEW_UPDATE_INTERVAL);
+
+      if (shouldUpdate) {
+        this.lastPreviewUpdateTime = now;
+        this.updatePreviewRange(pointer.x, pointer.y);
+      }
     } else {
       this.clearPreviewRange();
-          }
+      this.lastPreviewUpdateTime = 0;
+    }
   }
+
 
   private updatePreviewRange(x: number, y: number): void {
     const towerConfig = TOWERS[this.selectedTowerKey!];
