@@ -809,7 +809,7 @@ export class GameScene extends Phaser.Scene {
 			// 移动端：检查是否点击了移动端UI区域（工具栏和塔选择面板）
 			if (this.isMobileDevice) {
 				// 检查移动端工具栏区域（右下角，约 y: 450-550, x: 600-800）
-				const clickedMobileToolbar = pointer.y > 450 && pointer.x > 600;
+				const clickedMobileToolbar = pointer.y > 430 && pointer.y < 530 && pointer.x > 600;
 				if (clickedMobileToolbar) {
 					return; // 点击了移动端工具栏，不处理
 				}
@@ -817,7 +817,7 @@ export class GameScene extends Phaser.Scene {
         // 检查虚拟摇杆区域（左下角，位置 80, 480，半径约 80）
         if (this.joystick) {
           const joystickPos = this.joystick.getPosition();
-          const joystickRadius = 80; // 摇杆检测半径（稍大于实际半径，确保完全覆盖）
+				  const joystickRadius = 100; // 摇杆检测半径（底座60 + 余量40，确保完全覆盖触摸区域）
           const distanceToJoystick = Phaser.Math.Distance.Between(
             pointer.x, pointer.y,
             joystickPos.x, joystickPos.y
