@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { TowerConfig } from '../config/towers';
 import { Enemy } from './Enemy';
 import { TowerUpgrade, UpgradeEffect, SpecialAbility } from '../config/towerUpgrades';
+import { ParticleFactory } from '../utils/ParticleFactory.js';
 
 // Tower emojis mapping
 const TOWER_EMOJIS: Record<string, string> = {
@@ -27,6 +28,8 @@ export class Tower extends Phaser.GameObjects.Container {
   private currentHealth: number;
   private destroyed: boolean = false;
   private onDestroyed: ((tower: Tower) => void) | null = null;
+  private healthBar: Phaser.GameObjects.Rectangle | null = null;
+  private healthBarBg: Phaser.GameObjects.Rectangle | null = null;
   // 升级系统
   private upgrades: Set<string> = new Set(); // 已购买的升级ID
   private evolution: string | null = null; // 进化后的类型
@@ -53,6 +56,18 @@ export class Tower extends Phaser.GameObjects.Container {
       fontSize: '24px'
     }).setOrigin(0.5);
     this.add(this.emojiIcon);
+
+  // 血条背景
+  this.healthBarBg = scene.add.rectangle(0, -25, 40, 6, 0x000000);
+  this.healthBarBg.setOrigin(0.5);
+  this.healthBarBg.setVisible(false);
+  this.add(this.healthBarBg);
+
+  // 血条
+  this.healthBar = scene.add.rectangle(-20, -25, 40, 6, 0x00FF00);
+  this.healthBar.setOrigin(0, 0.5);
+  this.healthBar.setVisible(false);
+  this.add(this.healthBar);
 
     // 选中高亮效果（默认隐藏）
     this.selectionIndicator = scene.add.rectangle(0, 0, 40, 40, 0xFFFF00, 0.3);
@@ -128,6 +143,12 @@ export class Tower extends Phaser.GameObjects.Container {
     if (this.destroyed) return;
     this.currentHealth = Math.max(0, this.currentHealth - amount);
 
+    // 触发受伤粒子效果
+    ParticleFactory.createDamageParticles(this.scene, this.x, this.y);
+
+    // 更新血条
+    this.updateHealthBar();
+
     if (this.currentHealth <= 0) {
       this.destroyed = true;
       this.showSelected(false);
@@ -135,6 +156,39 @@ export class Tower extends Phaser.GameObjects.Container {
         this.onDestroyed(this);
       }
     }
+  }
+
+  /**
+   * 更新血条显示
+   */
+  private updateHealthBar(): void {
+    if (!this.healthBar || !this.healthBarBg) return;
+
+    // 如果满血，隐藏血条
+    if (this.currentHealth >= this.maxHealth) {
+      this.healthBar.setVisible(false);
+      this.healthBarBg.setVisible(false);
+      return;
+    }
+
+    // 显示血条
+    this.healthBar.setVisible(true);
+    this.healthBarBg.setVisible(true);
+
+    const percentage = this.currentHealth / this.maxHealth;
+    const barWidth = 40 * percentage;
+
+    // 更新血条宽度
+    this.healthBar.setDisplaySize(barWidth, 6);
+
+    // 根据血量设置颜色
+    let color = 0x00FF00; // 绿色 (>50%)
+    if (percentage <= 0.25) {
+      color = 0xFF0000; // 红色 (<25%)
+    } else if (percentage <= 0.5) {
+      color = 0xFFFF00; // 黄色 (25%-50%)
+    }
+    this.healthBar.setFillStyle(color);
   }
 
   public isDestroyed(): boolean {
