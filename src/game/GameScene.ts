@@ -159,10 +159,10 @@ export class GameScene extends Phaser.Scene {
    * 创建移动端控制组件
    */
   private createMobileControls(): void {
-    // 创建虚拟摇杆（左下角）
-    this.joystick = new VirtualJoystick(this, 80, 480);
+    // 创建虚拟摇杆（左侧中间位置，避免覆盖左下角塔位）
+    this.joystick = new VirtualJoystick(this, 80, 300);
 
-    // 创建快捷按钮栏（右下角）
+    // 创建快捷按钮栏（屏幕中间底部）
     this.createMobileToolbar();
 
     // 移动端使用自定义塔楼选择面板（替换桌面端的底部面板）
@@ -209,7 +209,8 @@ export class GameScene extends Phaser.Scene {
       }
     ];
 
-    this._mobileToolbar = new MobileToolbar(this, 680, 480, toolbarConfig);
+    // 将工具栏移到屏幕中间底部位置，避免覆盖右侧塔位
+    this._mobileToolbar = new MobileToolbar(this, 400, 480, toolbarConfig);
     this.add.existing(this._mobileToolbar);
   }
 
@@ -808,16 +809,16 @@ export class GameScene extends Phaser.Scene {
 
 			// 移动端：检查是否点击了移动端UI区域（工具栏和塔选择面板）
 			if (this.isMobileDevice) {
-				// 检查移动端工具栏区域（右下角，约 y: 450-550, x: 600-800）
-				const clickedMobileToolbar = pointer.y > 430 && pointer.y < 530 && pointer.x > 600;
+				// 检查移动端工具栏区域（中间底部，约 y: 450-530, x: 300-500）
+				const clickedMobileToolbar = pointer.y > 430 && pointer.y < 530 && pointer.x > 300 && pointer.x < 500;
 				if (clickedMobileToolbar) {
 					return; // 点击了移动端工具栏，不处理
 				}
 
-        // 检查虚拟摇杆区域（左下角，位置 80, 480，半径约 80）
+        // 检查虚拟摇杆区域（左侧中间，位置 80, 300，半径约 80）
         if (this.joystick) {
           const joystickPos = this.joystick.getPosition();
-          const joystickRadius = 100; // 摇杆检测半径（底座60 + 余量40，确保完全覆盖触摸区域）
+          const joystickRadius = 80; // 摇杆检测半径（底座60 + 触摸区域20）
           const distanceToJoystick = Phaser.Math.Distance.Between(
             pointer.x, pointer.y,
             joystickPos.x, joystickPos.y
