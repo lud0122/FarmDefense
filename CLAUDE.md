@@ -8,28 +8,29 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Tech Stack
 
-- **Language:** TypeScript (ES2020)
+- **Language:** TypeScript (ES2020) with strict mode enabled
 - **Game Engine:** Phaser 3.70
 - **Build Tool:** Vite 5.x
 - **Bundler:** ESBuild (via Vite)
-- **Test Framework:** Vitest
+- **Test Frameworks:** Vitest (unit), Playwright (E2E)
+- **Type Checking:** TypeScript strict mode with noUnusedLocals/noUnusedParameters
 
 ## Development Commands
 
 ```bash
-# Start dev server with hot reload
+# Start dev server with hot reload (http://localhost:5173)
 npm run dev
 
-# Build for production
+# Build for production (runs tsc first, then vite build)
 npm run build
 
-# Type check only (no bundling)
+# Type check only (no bundling) - ALWAYS run before committing
 npx tsc --noEmit
 
 # Preview production build
 npm run preview
 
-# Run all tests
+# Run all unit tests
 npm test
 
 # Run tests in watch mode
@@ -37,6 +38,9 @@ npm run test:watch
 
 # Run specific test file
 npx vitest run src/test/smoke.test.ts
+
+# Run E2E tests with Playwright (if configured)
+npx playwright test
 ```
 
 ## Architecture
@@ -140,6 +144,8 @@ The game supports both desktop and mobile platforms:
 - Mobile UI components emit events that `GameScene` listens to for coordination
 - Level configs include `isSmartLevel` flag for Level 5+ pathfinding enemies
 - Behavior configs include `behaviorMix` for Level 6+ behavior ratios
+- **TypeScript strict mode**: Always fix all type errors before committing
+- **Import style**: Use `.js` extensions for local imports (e.g., `import { Foo } from './Foo.js'`)
 
 ## Adding New Content
 
@@ -171,20 +177,43 @@ The game supports both desktop and mobile platforms:
 
 ## Testing
 
+The project uses two testing frameworks:
+- **Vitest** - Unit tests and integration tests
+- **Playwright** - E2E browser tests (available but not fully configured)
+
 ```bash
-# Type check
+# Type check (ALWAYS run before commits)
 npx tsc --noEmit
 
-# Dev server (manual testing)
+# Dev server (manual testing at http://localhost:5173)
 npm run dev
 
 # Run unit tests
 npm test
+
+# Run E2E tests (if configured)
+npx playwright test
 ```
 
-Test files are located in:
+Test file locations:
 - `src/test/` - Smoke tests and integration tests
 - `src/**/__tests__/` - Unit tests colocated with source files
+- `*.spec.ts` - E2E test files (Playwright)
+
+### Mobile Testing
+
+To test mobile features locally:
+1. Run `npm run dev`
+2. Open browser DevTools (F12)
+3. Toggle device toolbar (Ctrl+Shift+M)
+4. Select a mobile device or set custom dimensions
+5. Test virtual joystick, touch controls, and responsive UI
+
+### Common Issues
+
+- **Build fails**: Run `npx tsc --noEmit` to see type errors
+- **Tests fail**: Check that all imports use `.js` extensions for local modules
+- **Mobile controls not working**: Verify device detection with `MobileDetect.isMobile()`
 
 ## Deployment
 
@@ -193,3 +222,20 @@ The project uses GitHub Actions for automated deployment to GitHub Pages:
 - Workflow file: `.github/workflows/deploy.yml`
 - Triggered on push to `master` branch
 - Builds with `npm run build` and deploys `dist/` folder
+
+## Development Workflow
+
+Before committing code:
+1. Run type check: `npx tsc --noEmit`
+2. Run tests: `npm test`
+3. Test manually: `npm run dev`
+4. Verify build: `npm run build`
+
+## Quick Reference
+
+Key files to understand the architecture:
+- `src/main.ts` - Game initialization and scene registration
+- `src/game/GameScene.ts` - Main gameplay logic
+- `src/config/levels.ts` - Level configuration and progression
+- `src/systems/EnemyManager.ts` - Enemy spawning and behavior orchestration
+- `src/entities/behaviors/EnemyBehavior.ts` - Behavior interface for Level 6+
