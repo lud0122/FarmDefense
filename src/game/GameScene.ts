@@ -159,8 +159,8 @@ export class GameScene extends Phaser.Scene {
    * 创建移动端控制组件
    */
   private createMobileControls(): void {
-    // 创建虚拟摇杆（左侧中间位置，避免覆盖左下角塔位）
-    this.joystick = new VirtualJoystick(this, 80, 300);
+    // 创建虚拟摇杆（右下角位置）
+    this.joystick = new VirtualJoystick(this, 720, 540);
 
     // 创建快捷按钮栏（屏幕中间底部）
     this.createMobileToolbar();
