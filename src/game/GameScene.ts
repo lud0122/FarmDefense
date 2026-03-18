@@ -184,6 +184,7 @@ export class GameScene extends Phaser.Scene {
 
   /**
    * 创建移动端快捷按钮栏
+   * 位置：屏幕中间偏上，避免遮挡底排塔按钮
    */
   private createMobileToolbar(): void {
     const toolbarConfig = [
@@ -194,6 +195,10 @@ export class GameScene extends Phaser.Scene {
         color: 0xCC3333,
         onClick: () => {
           this.deselectTower();
+          // 同步清除移动端塔按钮选中状态
+          if (this.mobileTowerPanel) {
+            this.mobileTowerPanel.selectTower(null);
+          }
           this.audioSystem.playClickSound();
         }
       },
@@ -209,8 +214,8 @@ export class GameScene extends Phaser.Scene {
       }
     ];
 
-    // 将工具栏移到屏幕中间底部位置，避免覆盖右侧塔位
-    this._mobileToolbar = new MobileToolbar(this, 400, 480, toolbarConfig);
+    // 将工具栏移到屏幕中间偏上位置(400, 420)，避免遮挡底排塔按钮(y=540)
+    this._mobileToolbar = new MobileToolbar(this, 400, 420, toolbarConfig);
     this.add.existing(this._mobileToolbar);
   }
 
@@ -810,7 +815,7 @@ export class GameScene extends Phaser.Scene {
 			// 移动端：检查是否点击了移动端UI区域（工具栏和塔选择面板）
 			if (this.isMobileDevice) {
 				// 检查移动端工具栏区域（中间底部，约 y: 450-530, x: 300-500）
-				const clickedMobileToolbar = pointer.y > 430 && pointer.y < 530 && pointer.x > 300 && pointer.x < 500;
+				const clickedMobileToolbar = pointer.y > 380 && pointer.y < 470 && pointer.x > 300 && pointer.x < 500;
 				if (clickedMobileToolbar) {
 					return; // 点击了移动端工具栏，不处理
 				}

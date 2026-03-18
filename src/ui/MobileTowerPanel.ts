@@ -27,6 +27,8 @@ export class MobileTowerPanel extends Phaser.GameObjects.Container {
   private readonly panelWidth = 600;
   private readonly panelHeight = 100;
 
+  public selectCallback: ((key: string) => void) | null = null;
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
 
