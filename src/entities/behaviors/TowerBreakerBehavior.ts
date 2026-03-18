@@ -51,15 +51,17 @@ export class TowerBreakerBehavior implements EnemyBehavior {
 
     this.lastAttackTime = time;
 
-    // 发射攻击粒子 - 使用类型断言获取 scene
-    const enemyWithScene = enemy as unknown as { scene: Phaser.Scene };
-    ParticleFactory.createAttackParticles(
-      enemyWithScene.scene,
-      enemy.x,
-      enemy.y,
-      this.targetTower.x,
-      this.targetTower.y
-    );
+    // 发射攻击粒子 - 仅在 scene 存在时
+    const enemyWithScene = enemy as unknown as { scene?: Phaser.Scene };
+    if (enemyWithScene.scene?.add) {
+      ParticleFactory.createAttackParticles(
+        enemyWithScene.scene,
+        enemy.x,
+        enemy.y,
+        this.targetTower.x,
+        this.targetTower.y
+      );
+    }
 
     this.targetTower.takeDamage(this.attackDamage);
   }
