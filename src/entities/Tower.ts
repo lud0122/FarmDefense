@@ -295,18 +295,18 @@ export class Tower extends Phaser.GameObjects.Container {
       navigator.vibrate(50);
     }
 
-    // Call GameScene's showTowerRecycleMenu method directly
+    // Call GameScene's showTowerUpgradeMenu method (includes repair option)
     const gameScene = this.scene as any;
-    if (gameScene.showTowerRecycleMenu) {
-      gameScene.showTowerRecycleMenu(this);
+    if (gameScene.showTowerUpgradeMenu) {
+      gameScene.showTowerUpgradeMenu(this);
     }
   }
 
   private onLeftClick(): void {
-    // 点击已存在的塔楼时，应该选中它并显示回收菜单
+    // 点击已存在的塔楼时，显示升级菜单（包含修复选项）
     const gameScene = this.scene as any;
-    if (gameScene.showTowerRecycleMenu) {
-      gameScene.showTowerRecycleMenu(this);
+    if (gameScene.showTowerUpgradeMenu) {
+      gameScene.showTowerUpgradeMenu(this);
     }
   }
 
