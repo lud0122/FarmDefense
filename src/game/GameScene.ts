@@ -18,7 +18,7 @@ import { MobileTowerPanel } from '../ui/MobileTowerPanel';
 import { TowerUpgradeMenu } from '../ui/TowerUpgradeMenu';
 import { Tower } from '../entities/Tower';
 import { TowerUpgrade } from '../config/towerUpgrades';
-import { isMobile } from '../utils/MobileDetect';
+import { isMobile } from '../utils/MobileDetect';import { BackgroundSystem } from '../systems/BackgroundSystem.js';
 
 export class GameScene extends Phaser.Scene {
   private enemyManager!: EnemyManager;
@@ -47,6 +47,9 @@ export class GameScene extends Phaser.Scene {
   private _mobileToolbar: MobileToolbar | null = null;
   private mobileTowerPanel: MobileTowerPanel | null = null;
   private isMobileDevice: boolean = false;
+
+  // 动态背景系统
+  private backgroundSystem!: BackgroundSystem;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -240,8 +243,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createBackground(): void {
-    // 整体农场背景
-    this.add.rectangle(400, 300, 800, 600, 0x7CB342).setDepth(-10);
+    // 初始化动态背景系统
+    this.backgroundSystem = new BackgroundSystem(this);
+    this.backgroundSystem.create({
+      startTime: 'day',
+      startWeather: 'clear'
+    });
 
     // 创建不同的作物区域
     this.createCropZones();
@@ -251,6 +258,13 @@ export class GameScene extends Phaser.Scene {
 
     // 添加装饰元素（稻草人、水桶等）
     this.createFarmDecorations();
+
+    // 将植物装饰添加到环境动画系统
+    const plants = this.children.getChildren().filter(
+      child => child instanceof Phaser.GameObjects.Text &&
+               /[\u{1F300}-\u{1F9FF}]/u.test((child as Phaser.GameObjects.Text).text)
+    ) as Phaser.GameObjects.Text[];
+    this.backgroundSystem.applyWindEffect(plants);
   }
 
   private createCropZones(): void {
@@ -1099,6 +1113,9 @@ export class GameScene extends Phaser.Scene {
   // }
 
   update(time: number, delta: number): void {
+    // 更新动态背景系统
+    this.backgroundSystem.update(time, delta);
+
     // 处理虚拟摇杆输入（移动端）
     if (this.isMobileDevice && this.joystick) {
       const direction = this.joystick.getDirection();
