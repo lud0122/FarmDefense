@@ -3,6 +3,7 @@ import { BootScene } from './game/BootScene';
 import { MenuScene } from './game/MenuScene';
 import { GameScene } from './game/GameScene';
 import { GameOverScene } from './game/GameOverScene';
+import { FarmBackgroundScene } from './game/FarmBackgroundScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -14,7 +15,7 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH
   },
-  scene: [BootScene, MenuScene, GameScene, GameOverScene],
+  scene: [BootScene, FarmBackgroundScene, MenuScene, GameScene, GameOverScene],
   physics: {
     default: 'arcade',
     arcade: {

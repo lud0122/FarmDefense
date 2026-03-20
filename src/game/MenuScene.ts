@@ -8,8 +8,9 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    // 背景
-    this.createBackground();
+    // 启动农场背景场景作为底层
+    this.scene.launch('FarmBackgroundScene');
+    this.scene.sendToBack('FarmBackgroundScene');
 
     // 主标题 - 像素风 + 金色光晕
     this.add.text(400, 80, '农场保卫战', {
@@ -80,8 +81,12 @@ export class MenuScene extends Phaser.Scene {
       this.startGame(0);
     });
 
-    // 说明文字 - 使用有机字体
-    this.add.text(400, 570, '🧠 = 智慧敌人模式  |  🎯 策略塔防', {
+    // 说明文字背景 - 避免与农场重叠
+    const hintBg = this.add.rectangle(400, 575, 460, 35, 0x1A1A2E);
+    hintBg.setAlpha(0.85);
+    
+    // 说明文字
+    this.add.text(400, 575, '🧠 = 智慧敌人模式  |  🎯 策略塔防', {
       fontFamily: '"Quicksand", sans-serif',
       fontSize: '14px',
       color: '#BDBDBD'
@@ -179,24 +184,8 @@ export class MenuScene extends Phaser.Scene {
   private startGame(levelIndex: number): void {
     this.cameras.main.fadeOut(300);
     this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.stop('FarmBackgroundScene');
       this.scene.start('GameScene', { startingLevel: levelIndex });
     });
-  }
-
-  private createBackground(): void {
-    // 渐变背景
-    const graphics = this.add.graphics();
-
-    // 天空
-    graphics.fillGradientStyle(0x87CEEB, 0x87CEEB, 0x228B22, 0x228B22);
-    graphics.fillRect(0, 0, 800, 600);
-
-    // 草地装饰
-    for (let i = 0; i < 30; i++) {
-      const x = Phaser.Math.Between(0, 800);
-      const y = Phaser.Math.Between(350, 600);
-      graphics.fillStyle(0x2E8B57, 0.5);
-      graphics.fillCircle(x, y, Phaser.Math.Between(5, 15));
-    }
   }
 }
