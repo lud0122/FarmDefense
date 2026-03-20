@@ -11,55 +11,94 @@ export class MenuScene extends Phaser.Scene {
     // 背景
     this.createBackground();
 
-    // 标题
+    // 主标题 - 像素风 + 金色光晕
     this.add.text(400, 80, '农场保卫战', {
-      fontSize: '72px',
+      fontFamily: '"Press Start 2P", cursive',
+      fontSize: '48px',
       color: '#FFD700',
-      stroke: '#228B22',
-      strokeThickness: 6
+      stroke: '#4A7C59',
+      strokeThickness: 4,
+      shadow: {
+        offsetX: 4,
+        offsetY: 4,
+        color: '#2E5339',
+        blur: 8,
+        fill: true
+      }
     }).setOrigin(0.5);
 
-    this.add.text(400, 160, 'Farm Defender', {
-      fontSize: '32px',
-      color: '#FFFFFF'
+    // 副标题 - 科技感字体
+    this.add.text(400, 150, 'FARM DEFENDER', {
+      fontFamily: '"Orbitron", monospace',
+      fontSize: '28px',
+      fontStyle: '700',
+      color: '#E3F2FD',
+      letterSpacing: 8
     }).setOrigin(0.5);
+
+    // 装饰线
+    const lineLeft = this.add.graphics();
+    lineLeft.lineStyle(2, 0xFFD700, 0.6);
+    lineLeft.lineBetween(150, 155, 350, 155);
+
+    const lineRight = this.add.graphics();
+    lineRight.lineStyle(2, 0xFFD700, 0.6);
+    lineRight.lineBetween(450, 155, 650, 155);
 
     // 创建关卡选择器
     this.createLevelSelector();
 
-    // 开始游戏按钮（从第1关开始）
-    const startBtn = this.add.rectangle(400, 480, 200, 50, 0x4CAF50).setInteractive();
-    this.add.text(400, 480, '从第1关开始', {
+    // 开始游戏按钮（从第1关开始）- 毛玻璃风格
+    const startBtnBg = this.add.rectangle(400, 470, 220, 60, 0xFFFFFF);
+    startBtnBg.setAlpha(0.15);
+    startBtnBg.setStrokeStyle(2, 0x7CB342, 0.8);
+    startBtnBg.setInteractive();
+
+    const startBtnText = this.add.text(400, 470, '开始游戏', {
+      fontFamily: '"Quicksand", sans-serif',
       fontSize: '24px',
+      fontStyle: '700',
       color: '#FFFFFF'
     }).setOrigin(0.5);
 
-    // 按钮交互
-    startBtn.on('pointerover', () => {
-      startBtn.setFillStyle(0x45a049);
+    // 按钮交互 - 毛玻璃效果
+    startBtnBg.on('pointerover', () => {
+      startBtnBg.setAlpha(0.25);
+      startBtnBg.setStrokeStyle(3, 0xFFD700, 1);
+      startBtnText.setScale(1.05);
       this.input.setDefaultCursor('pointer');
     });
 
-    startBtn.on('pointerout', () => {
-      startBtn.setFillStyle(0x4CAF50);
+    startBtnBg.on('pointerout', () => {
+      startBtnBg.setAlpha(0.15);
+      startBtnBg.setStrokeStyle(2, 0x7CB342, 0.8);
+      startBtnText.setScale(1);
       this.input.setDefaultCursor('default');
     });
 
-    startBtn.on('pointerdown', () => {
+    startBtnBg.on('pointerdown', () => {
       this.startGame(0);
     });
 
-    // 说明文字
-    this.add.text(400, 560, '点击关卡直接跳转 | 🧠 = 智慧敌人模式', {
-      fontSize: '16px',
-      color: '#CCCCCC'
+    // 说明文字 - 使用有机字体
+    this.add.text(400, 570, '🧠 = 智慧敌人模式  |  🎯 策略塔防', {
+      fontFamily: '"Quicksand", sans-serif',
+      fontSize: '14px',
+      color: '#BDBDBD'
     }).setOrigin(0.5);
   }
 
   private createLevelSelector(): void {
+    // 区块标题 - 像素风格
+    this.add.text(400, 180, '选择关卡', {
+      fontFamily: '"Press Start 2P", cursive',
+      fontSize: '14px',
+      color: '#FFFFFF'
+    }).setOrigin(0.5);
+
     this.levelSelectorContainer = this.add.container(0, 0);
 
-    const startY = 220;
+    const startY = 210;
     const buttonWidth = 140;
     const buttonHeight = 50;
     const spacing = 20;
@@ -71,21 +110,26 @@ export class MenuScene extends Phaser.Scene {
       const x = 200 + col * (buttonWidth + spacing);
       const y = startY + row * (buttonHeight + spacing);
 
-      // 按钮背景
-      const btn = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x2196F3).setInteractive();
-      btn.setStrokeStyle(2, 0xFFFFFF);
+      // 按钮背景 - 毛玻璃风格
+      const btn = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0xFFFFFF);
+      btn.setAlpha(0.12);
+      btn.setInteractive();
+      btn.setStrokeStyle(1, 0x7CB342, 0.5);
 
-      // 关卡编号
-      const levelNum = this.add.text(x, y - 10, `第${level.number}关`, {
-        fontSize: '20px',
-        color: '#FFFFFF',
-        fontStyle: 'bold'
+      // 关卡编号 - 使用现代字体
+      const levelNum = this.add.text(x, y - 10, `${level.number}`, {
+        fontFamily: '"Orbitron", monospace',
+        fontSize: '22px',
+        color: '#7CB342',
+        fontStyle: '700'
       }).setOrigin(0.5);
 
       // 关卡名称
       const levelName = this.add.text(x, y + 12, level.name, {
-        fontSize: '14px',
-        color: '#FFE082'
+        fontFamily: '"Quicksand", sans-serif',
+        fontSize: '12px',
+        fontStyle: '500',
+        color: '#E3F2FD'
       }).setOrigin(0.5);
 
       // Smart level indicator
@@ -96,26 +140,31 @@ export class MenuScene extends Phaser.Scene {
         this.levelSelectorContainer.add(smartIcon);
       }
 
-      // 波次数
+      // 波次数 - 小字
       const wavesText = this.add.text(x, y + 26, `${level.waves.length}波`, {
-        fontSize: '12px',
-        color: '#BBDEFB'
+        fontFamily: '"Quicksand", sans-serif',
+        fontSize: '10px',
+        color: '#FFD700'
       }).setOrigin(0.5);
 
-      // 按钮交互
+      // 按钮交互 - 毛玻璃风格
       btn.on('pointerover', () => {
-        btn.setFillStyle(0x1976D2);
+        btn.setAlpha(0.25);
+        btn.setStrokeStyle(2, 0xFFD700, 1);
         btn.setScale(1.05);
         levelNum.setScale(1.05);
         levelName.setScale(1.05);
+        levelNum.setColor('#FFD700');
         this.input.setDefaultCursor('pointer');
       });
 
       btn.on('pointerout', () => {
-        btn.setFillStyle(0x2196F3);
+        btn.setAlpha(0.12);
+        btn.setStrokeStyle(1, 0x7CB342, 0.5);
         btn.setScale(1);
         levelNum.setScale(1);
         levelName.setScale(1);
+        levelNum.setColor('#7CB342');
         this.input.setDefaultCursor('default');
       });
 

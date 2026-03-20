@@ -14,10 +14,19 @@ export class EconomySystem {
 
   public createUI(x: number, y: number): void {
     this.moneyText = this.scene.add.text(x, y, this.getMoneyString(), {
-      fontSize: '24px',
+      fontFamily: '"Orbitron", monospace',
+      fontSize: '26px',
+      fontStyle: '700',
       color: '#FFD700',
-      stroke: '#000000',
-      strokeThickness: 2
+      stroke: '#8B4513',
+      strokeThickness: 3,
+      shadow: {
+        offsetX: 0,
+        offsetY: 2,
+        color: '#5D4037',
+        blur: 4,
+        fill: true
+      }
     });
   }
 

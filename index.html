@@ -6,35 +6,133 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>农场保卫战 - Farm Defender</title>
+
+  <!-- Google Fonts - 有机田园未来主义字体系统 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <style>
-    /* 禁用双击缩放和触摸默认行为 */
-    * {
-      touch-action: manipulation;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
+  /* 禁用双击缩放和触摸默认行为 */
+  * {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 
-    /* 禁止 iOS 手势缩放 */
-    canvas {
-      touch-action: none;
-    }
+  /* 禁止 iOS 手势缩放 */
+  canvas {
+    touch-action: none;
+  }
 
-    /* 确保 canvas 铺满容器 */
-    #app {
-      width: 100%;
-      height: 100vh;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-    }
+  /* ============================================
+     FARM DEFENDER - 有机田园未来主义设计系统
+     Phase 1: 核心视觉升级
+  ============================================ */
 
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background-color: #87CEEB;
-    }
+  /* CSS 自定义属性 - 设计令牌 */
+  :root {
+    /* 字体系统 */
+    --font-pixel: 'Press Start 2P', cursive;
+    --font-body: 'Quicksand', sans-serif;
+    --font-tech: 'Orbitron', monospace;
+
+    /* 田园绿植系 */
+    --farm-green-primary: #4A7C59;
+    --farm-green-light: #7CB342;
+    --farm-green-dark: #2E5339;
+    --farm-green-accent: #9CCC65;
+
+    /* 大地暖色系 */
+    --earth-brown: #8B4513;
+    --earth-light: #D2B48C;
+    --earth-medium: #A0826D;
+    --earth-dark: #5D4037;
+
+    /* 天空色系 */
+    --sky-primary: #87CEEB;
+    --sky-light: #E3F2FD;
+    --sky-dark: #5DADE2;
+    --sky-dusk: #FF8C00;
+
+    /* 强调色 - 金色收获 */
+    --accent-gold: #FFD700;
+    --accent-gold-light: #FFE082;
+    --accent-orange: #FF8C00;
+    --accent-warm: #FFB74D;
+
+    /* UI 毛玻璃效果 */
+    --glass-bg: rgba(255, 255, 255, 0.12);
+    --glass-bg-hover: rgba(255, 255, 255, 0.2);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-border-hover: rgba(255, 255, 255, 0.5);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --glass-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.15);
+
+    /* 文字颜色 */
+    --text-primary: #FFFFFF;
+    --text-secondary: #F5F5DC;
+    --text-muted: #BDBDBD;
+    --text-dark: #2E5339;
+
+    /* 状态颜色 */
+    --status-success: #7CB342;
+    --status-warning: #FFB74D;
+    --status-danger: #EF5350;
+    --status-info: #5DADE2;
+
+    /* 间距系统 */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+
+    /* 圆角 */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+
+    /* 动画时间 */
+    --transition-fast: 150ms;
+    --transition-normal: 250ms;
+    --transition-slow: 350ms;
+    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--sky-primary) 0%, var(--sky-light) 50%, var(--accent-gold-light) 100%);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 噪点纹理叠加 */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+    z-index: 9999;
+  }
+
+  /* 确保 canvas 铺满容器 */
+  #app {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+  }
   </style>
 </head>
 <body>

@@ -376,7 +376,10 @@ export class GameScene extends Phaser.Scene {
 
   private createPath(): void {
     const graphics = this.add.graphics();
-    graphics.lineStyle(24, 0xD2B48C);
+
+    // 主路径 - 温暖的土色，更宽更柔和
+    graphics.fillStyle(0xD2B48C, 0.9);
+    graphics.lineStyle(28, 0xD2B48C, 0.9);
 
     // 绘制路径
     graphics.moveTo(PATH_POINTS[0].x, PATH_POINTS[0].y);
@@ -385,8 +388,24 @@ export class GameScene extends Phaser.Scene {
     }
     graphics.strokePath();
 
-    // 路径边框
-    graphics.lineStyle(2, 0x8B4513);
+    // 路径边缘高光 - 增加立体感
+    graphics.lineStyle(2, 0xFFE082, 0.6);
+    graphics.moveTo(PATH_POINTS[0].x, PATH_POINTS[0].y - 12);
+    for (let i = 1; i < PATH_POINTS.length; i++) {
+      graphics.lineTo(PATH_POINTS[i].x, PATH_POINTS[i].y - 12);
+    }
+    graphics.strokePath();
+
+    // 路径边缘阴影
+    graphics.lineStyle(2, 0x8B4513, 0.4);
+    graphics.moveTo(PATH_POINTS[0].x, PATH_POINTS[0].y + 12);
+    for (let i = 1; i < PATH_POINTS.length; i++) {
+      graphics.lineTo(PATH_POINTS[i].x, PATH_POINTS[i].y + 12);
+    }
+    graphics.strokePath();
+
+    // 外边框
+    graphics.lineStyle(3, 0x5D4037, 0.8);
     graphics.moveTo(PATH_POINTS[0].x, PATH_POINTS[0].y);
     for (let i = 1; i < PATH_POINTS.length; i++) {
       graphics.lineTo(PATH_POINTS[i].x, PATH_POINTS[i].y);
@@ -395,18 +414,37 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createUI(): void {
-    // 生命值
-    this.livesText = this.add.text(700, 20, `❤️ ${this.lives}`, {
-      fontSize: '24px',
-      color: '#FF0000',
-      stroke: '#000000',
-      strokeThickness: 2
+    // 生命值 - 使用科技感字体，带光晕效果
+    this.livesText = this.add.text(680, 20, `❤️ ${this.lives}`, {
+      fontFamily: '"Orbitron", monospace',
+      fontSize: '28px',
+      fontStyle: '700',
+      color: '#EF5350',
+      stroke: '#5D4037',
+      strokeThickness: 3,
+      shadow: {
+        offsetX: 0,
+        offsetY: 2,
+        color: '#5D4037',
+        blur: 4,
+        fill: true
+      }
     });
 
-    // 波次信息
-    this.waveText = this.add.text(400, 20, `Level ${this.currentLevel + 1} - Wave ${this.currentWave + 1}`, {
-      fontSize: '24px',
-      color: '#FFFFFF'
+    // 波次信息 - 使用像素风字体
+    this.waveText = this.add.text(400, 20, `LEVEL ${this.currentLevel + 1} - WAVE ${this.currentWave + 1}`, {
+      fontFamily: '"Press Start 2P", cursive',
+      fontSize: '16px',
+      color: '#FFFFFF',
+      stroke: '#5DADE2',
+      strokeThickness: 2,
+      shadow: {
+        offsetX: 2,
+        offsetY: 2,
+        color: '#2E5339',
+        blur: 2,
+        fill: true
+      }
     }).setOrigin(0.5, 0);
 
     // 桌面端显示底部塔楼面板，移动端不显示（使用 MobileTowerPanel 替代）
@@ -416,12 +454,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   /**
-   * 创建桌面端塔楼选择面板
+   * 创建桌面端塔楼选择面板 - 毛玻璃设计
    */
   private createDesktopTowerPanel(): void {
-    // 塔楼选择面板（底部）
-    const towerPanel = this.add.rectangle(400, 560, 800, 80, 0x333333);
-    towerPanel.setAlpha(0.8);
+    // 塔楼选择面板容器背景（毛玻璃效果）
+    const panelBg = this.add.rectangle(400, 560, 800, 80, 0x4A7C59);
+    panelBg.setAlpha(0.75);
+    panelBg.setDepth(-1);
+
+    // 面板边框
+    const panelBorder = this.add.rectangle(400, 560, 796, 76, 0x87CEEB);
+    panelBorder.setStrokeStyle(2, 0x7CB342);
+    panelBorder.setAlpha(0.3);
+    panelBorder.setDepth(-2);
 
     // 显示可用塔楼
     const towerKeys = Object.keys(TOWERS);
@@ -430,25 +475,46 @@ export class GameScene extends Phaser.Scene {
       const x = 100 + index * 120;
       const y = 560;
 
-      // 塔楼按钮背景
-      const btn = this.add.rectangle(x, y, 100, 60, 0x555555).setInteractive();
+      // 塔楼按钮背景（毛玻璃风格）
+      const btn = this.add.rectangle(x, y, 100, 64, 0xFFFFFF);
+      btn.setAlpha(0.15);
+      btn.setStrokeStyle(1, 0xFFFFFF, 0.3);
+      btn.setInteractive();
 
-      // 塔楼名称
-      this.add.text(x, y - 15, tower.name, {
-        fontSize: '14px',
-        color: '#FFFFFF'
+      // 悬停效果
+      btn.on('pointerover', () => {
+        btn.setFillStyle(0xFFFFFF, 0.25);
+        btn.setStrokeStyle(2, 0xFFD700, 0.5);
+      });
+      btn.on('pointerout', () => {
+        const isSelected = (this as any).currentSelectedBtn === btn;
+        btn.setFillStyle(0xFFFFFF, isSelected ? 0.35 : 0.15);
+        btn.setStrokeStyle(1, 0xFFFFFF, 0.3);
+      });
+
+      // 塔楼名称 - 使用有机圆润字体
+      this.add.text(x, y - 18, tower.name, {
+        fontFamily: '"Quicksand", sans-serif',
+        fontSize: '13px',
+        fontStyle: '600',
+        color: '#E3F2FD'
       }).setOrigin(0.5);
 
-      // 价格
-      this.add.text(x, y + 10, `$${tower.cost}`, {
-        fontSize: '16px',
-        color: '#FFD700'
+      // 价格 - 使用科技感字体
+      this.add.text(x, y + 6, `$${tower.cost}`, {
+        fontFamily: '"Orbitron", monospace',
+        fontSize: '15px',
+        fontStyle: '700',
+        color: '#FFD700',
+        stroke: '#5D4037',
+        strokeThickness: 1
       }).setOrigin(0.5);
 
-      // 快捷键提示
-      this.add.text(x, y + 28, `${index + 1}`, {
-        fontSize: '12px',
-        color: '#AAAAAA'
+      // 快捷键提示 - 像素风格
+      this.add.text(x, y + 24, `[${index + 1}]`, {
+        fontFamily: '"Press Start 2P", cursive',
+        fontSize: '8px',
+        color: '#BDBDBD'
       }).setOrigin(0.5);
 
       // 点击事件
@@ -881,21 +947,33 @@ export class GameScene extends Phaser.Scene {
 
     if (!this.previewRangeCircle) {
       this.previewRangeCircle = this.add.graphics();
+      this.previewRangeCircle.setDepth(100);
     }
 
     this.previewRangeCircle.clear();
 
-    // 绘制半透明填充
-    this.previewRangeCircle.fillStyle(0x00ff00, 0.1);
+    // 计算呼吸动画的透明度
+    const breatheAlpha = 0.08 + Math.sin(Date.now() / 500) * 0.04;
+
+    // 绘制渐变填充效果 - 使用田园绿色
+    this.previewRangeCircle.fillStyle(0x7CB342, breatheAlpha);
     this.previewRangeCircle.fillCircle(x, y, towerConfig.range);
 
-    // 绘制边线
-    this.previewRangeCircle.lineStyle(2, 0x00ff00, 0.5);
+    // 绘制外圈发光效果
+    this.previewRangeCircle.lineStyle(3, 0x9CCC65, 0.6);
     this.previewRangeCircle.strokeCircle(x, y, towerConfig.range);
 
-    // 绘制中心点（表示塔的位置）
-    this.previewRangeCircle.fillStyle(0x00ff00, 0.8);
-    this.previewRangeCircle.fillCircle(x, y, 4);
+    // 绘制内圈虚线效果
+    this.previewRangeCircle.lineStyle(2, 0x7CB342, 0.8);
+    this.previewRangeCircle.strokeCircle(x, y, towerConfig.range - 5);
+
+    // 绘制中心点（表示塔的位置）- 使用金色强调
+    this.previewRangeCircle.fillStyle(0xFFD700, 0.9);
+    this.previewRangeCircle.fillCircle(x, y, 5);
+
+    // 中心点光晕
+    this.previewRangeCircle.fillStyle(0xFFE082, 0.4);
+    this.previewRangeCircle.fillCircle(x, y, 8);
   }
 
   private clearPreviewRange(): void {
